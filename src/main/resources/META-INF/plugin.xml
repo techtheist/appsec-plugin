@@ -1,15 +1,56 @@
-<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.techtheist.appsecplugin</id>
-    <name>appsec-plugin</name>
-    <vendor>techtheist</vendor>
+    <id>io.whitespots.appsecplugin</id>
+    <name>AppSec</name>
+    <vendor url="https://whitespots.io/">Whitespots</vendor>
+
+    <description><![CDATA[
+    Plugin provides connection to AppSec Portal by Whitespots,
+    allowing developers to check and resolve vulnerabilities right in their favorite IDE!
+    ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
-
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <depends>Git4Idea</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.techtheist.appsecplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.techtheist.appsecplugin.startup.MyProjectActivity" />
+        <applicationService
+                serviceImplementation="io.whitespots.appsecplugin.services.AppSecPluginSettings"/>
+<!-- This file was referenced but not shown, so creating the essential parts -->
+<idea-plugin>
+  <name>Whitespots AppSec</name>
+  <id>io.whitespots.appsecplugin</id>
+  <vendor>Whitespots</vendor>
+
+  <description><![CDATA[
+    Whitespots AppSec Plugin for IntelliJ IDEA
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>Git4Idea</depends>
+
+  <!-- JCEF support -->
+  <depends optional="true" config-file="jcef-plugin.xml">com.intellij.modules.jcef</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow id="AppSec" secondary="true" icon="AllIcons.General.SecurityPlugins" anchor="bottom"
+                factoryClass="io.whitespots.appsecplugin.toolWindow.AppSecToolWindowFactory"/>
+  </extensions>
+
+  <actions>
+    <!-- Define your actions here -->
+  </actions>
+</idea-plugin>
+        <applicationConfigurable
+                parentId="tools"
+                id="io.whitespots.appsecplugin.settings.AppSecPluginSettingsConfigurable"
+                displayName="Whitespots AppSec"
+                instance="io.whitespots.appsecplugin.settings.AppSecPluginSettingsConfigurable"/>
+
+        <toolWindow
+                id="Whitespots AppSec"
+                anchor="right"
+                icon="/icons/appsec.svg"
+                factoryClass="io.whitespots.appsecplugin.toolWindow.AppSecToolWindowFactory"/>
+
+        <postStartupActivity implementation="io.whitespots.appsecplugin.startup.PluginStartupActivity"/>
     </extensions>
 </idea-plugin>
