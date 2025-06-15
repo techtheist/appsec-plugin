@@ -1,21 +1,12 @@
 package io.whitespots.appsecplugin.utils
 
 import com.intellij.ide.ui.LafManager
-import com.intellij.ide.ui.laf.darcula.DarculaLookAndFeelInfo
 
 object ThemeUtils {
-    /**
-     * Determines if the current IDE theme is dark.
-     * Uses the modern approach instead of deprecated isUnderDarcula().
-     */
     fun isDarkTheme(): Boolean {
         return LafManager.getInstance().currentUIThemeLookAndFeel.isDark
     }
 
-    /**
-     * Generates IntelliJ theme-aware CSS for HTML content.
-     * This ensures consistent styling across the plugin.
-     */
     fun getIntellijThemeCSS(): String {
         return if (isDarkTheme()) {
             getDarkThemeCSS()
@@ -36,7 +27,6 @@ object ThemeUtils {
                 padding: 0;
             }
             h1, h2, h3, h4, h5, h6 {
-                color: #BCBEC4;
                 margin-top: 24px;
                 margin-bottom: 16px;
                 font-weight: 600;
@@ -138,7 +128,6 @@ object ThemeUtils {
                 padding: 0;
             }
             h1, h2, h3, h4, h5, h6 {
-                color: #1f4e79;
                 margin-top: 24px;
                 margin-bottom: 16px;
                 font-weight: 600;
@@ -229,9 +218,6 @@ object ThemeUtils {
         """.trimIndent()
     }
 
-    /**
-     * Creates a complete HTML template with IntelliJ theme-aware styling.
-     */
     fun createStyledHtmlTemplate(bodyContent: String, title: String = "Content"): String {
         return """
             <!DOCTYPE html>

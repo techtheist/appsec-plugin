@@ -17,6 +17,7 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.ui.jcef.JBCefBrowser
 import git4idea.repo.GitRepositoryManager
 import io.whitespots.appsecplugin.api.*
+import io.whitespots.appsecplugin.highlighting.FindingHighlightService
 import io.whitespots.appsecplugin.models.AssetType
 import io.whitespots.appsecplugin.models.Finding
 import io.whitespots.appsecplugin.services.FindingsRefreshListener
@@ -169,6 +170,9 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
             tree.expandRow(i)
         }
         clearDescription()
+
+        val highlightService = FindingHighlightService.getInstance(project)
+        highlightService.updateFindings(findings)
     }
 
     private suspend fun setLoadingState(message: String) = withContext(Dispatchers.Main) {

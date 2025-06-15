@@ -14,43 +14,24 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationService
                 serviceImplementation="io.whitespots.appsecplugin.services.AppSecPluginSettings"/>
-<!-- This file was referenced but not shown, so creating the essential parts -->
-<idea-plugin>
-  <name>Whitespots AppSec</name>
-  <id>io.whitespots.appsecplugin</id>
-  <vendor>Whitespots</vendor>
-
-  <description><![CDATA[
-    Whitespots AppSec Plugin for IntelliJ IDEA
-  ]]></description>
-
-  <depends>com.intellij.modules.platform</depends>
-  <depends>Git4Idea</depends>
-
-  <!-- JCEF support -->
-  <depends optional="true" config-file="jcef-plugin.xml">com.intellij.modules.jcef</depends>
-
-  <extensions defaultExtensionNs="com.intellij">
-    <toolWindow id="AppSec" secondary="true" icon="AllIcons.General.SecurityPlugins" anchor="bottom"
-                factoryClass="io.whitespots.appsecplugin.toolWindow.AppSecToolWindowFactory"/>
-  </extensions>
-
-  <actions>
-    <!-- Define your actions here -->
-  </actions>
-</idea-plugin>
         <applicationConfigurable
                 parentId="tools"
                 id="io.whitespots.appsecplugin.settings.AppSecPluginSettingsConfigurable"
                 displayName="Whitespots AppSec"
                 instance="io.whitespots.appsecplugin.settings.AppSecPluginSettingsConfigurable"/>
-
         <toolWindow
                 id="Whitespots AppSec"
                 anchor="right"
                 icon="/icons/appsec.svg"
                 factoryClass="io.whitespots.appsecplugin.toolWindow.AppSecToolWindowFactory"/>
-
         <postStartupActivity implementation="io.whitespots.appsecplugin.startup.PluginStartupActivity"/>
+        <appStarter implementation="io.whitespots.appsecplugin.protocol.WhitespotsApplicationStarter"/>
     </extensions>
+
+    <actions>
+        <action id="AppSecHighlightDebug" class="io.whitespots.appsecplugin.debug.HighlightDebugAction"
+                text="Test AppSec Highlighting">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>

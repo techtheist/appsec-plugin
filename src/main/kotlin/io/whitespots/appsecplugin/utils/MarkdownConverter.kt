@@ -9,9 +9,6 @@ object MarkdownConverter {
     private val parser: Parser = Parser.builder(options).build()
     private val renderer: HtmlRenderer = HtmlRenderer.builder(options).build()
 
-    /**
-     * Converts a Markdown string to an HTML string.
-     */
     fun toHtml(markdown: String?): String {
         if (markdown.isNullOrBlank()) {
             return "<html><body><p>No description provided.</p></body></html>"
@@ -20,9 +17,6 @@ object MarkdownConverter {
         return renderer.render(document)
     }
 
-    /**
-     * Converts a Markdown string to a styled HTML string with IntelliJ theme-aware CSS.
-     */
     fun toStyledHtml(markdown: String?): String {
         if (markdown.isNullOrBlank()) {
             return ThemeUtils.createStyledHtmlTemplate("<p>No description provided.</p>", "Finding Description")
