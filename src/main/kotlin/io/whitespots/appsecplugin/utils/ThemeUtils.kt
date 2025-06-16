@@ -22,7 +22,8 @@ object ThemeUtils {
                 color: #BCBEC4;
                 font-family: 'SF Pro Text', 'Segoe UI', Ubuntu, Arial, sans-serif;
                 font-size: 13px;
-                text-wrap: wrap;
+                text-wrap: pretty;
+                overflow-wrap: break-word;
                 margin: 16px;
                 padding: 0;
             }
@@ -110,8 +111,9 @@ object ThemeUtils {
             }
             hr {
                 border: none;
-                border-top: 1px solid #555555;
+                border-top: 1px solid #4C5052;
                 margin: 24px 0;
+                background: transparent;
             }
         """.trimIndent()
     }
@@ -123,7 +125,8 @@ object ThemeUtils {
                 color: #000000;
                 font-family: 'SF Pro Text', 'Segoe UI', Ubuntu, Arial, sans-serif;
                 font-size: 13px;
-                text-wrap: wrap;
+                text-wrap: pretty;
+                overflow-wrap: break-word;
                 margin: 16px;
                 padding: 0;
             }
@@ -212,8 +215,9 @@ object ThemeUtils {
             }
             hr {
                 border: none;
-                border-top: 1px solid #E1E4E8;
+                border-top: 1px solid #D0D7DE;
                 margin: 24px 0;
+                background: transparent;
             }
         """.trimIndent()
     }

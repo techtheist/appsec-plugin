@@ -24,10 +24,8 @@ import java.util.regex.Pattern
 class WhitespotsApplicationStarter : ApplicationStarter {
     companion object {
         private val LOG = Logger.getInstance(WhitespotsApplicationStarter::class.java)
-        private const val COMMAND_NAME = "whitespots-appsec"
-
-        private val TOKEN_PATTERN = Pattern.compile("^[a-zA-Z0-9]{32,128}$")
     }
+    private val TOKEN_PATTERN = Pattern.compile("^[a-zA-Z0-9]{32,128}$")
 
     override fun main(args: List<String>) {
         LOG.info("WhitespotsApplicationStarter.main() called with args: $args")
@@ -37,7 +35,6 @@ class WhitespotsApplicationStarter : ApplicationStarter {
             return
         }
 
-        // args[0] is the command name (whitespots-appsec), args[1] is the subcommand
         val command = args[1]
         LOG.info("Processing command: $command")
 
@@ -125,7 +122,6 @@ class WhitespotsApplicationStarter : ApplicationStarter {
             openPluginSettings()
         }
 
-        // Trigger findings refresh for all open projects
         refreshFindings()
     }
 

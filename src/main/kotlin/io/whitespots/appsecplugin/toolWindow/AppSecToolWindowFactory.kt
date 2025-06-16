@@ -1,6 +1,9 @@
 package io.whitespots.appsecplugin.toolWindow
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -8,18 +11,26 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.ToolWindow
+import com.intellij.openapi.wm.ToolWindowContentUiType
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.AnimatedIcon
+import com.intellij.ui.JBSplitter
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.content.ContentFactory
+import com.intellij.ui.treeStructure.Tree
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.treeStructure.Tree
 import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.util.ui.JBUI
 import git4idea.repo.GitRepositoryManager
 import io.whitespots.appsecplugin.api.*
 import io.whitespots.appsecplugin.highlighting.FindingHighlightService
 import io.whitespots.appsecplugin.models.AssetType
 import io.whitespots.appsecplugin.models.Finding
+import io.whitespots.appsecplugin.models.Severity
+import io.whitespots.appsecplugin.models.TriageStatus
+import io.whitespots.appsecplugin.services.AppSecPluginSettings
 import io.whitespots.appsecplugin.services.FindingsRefreshListener
 import io.whitespots.appsecplugin.services.FindingsRefreshTopics
 import io.whitespots.appsecplugin.utils.GitUrlParser
@@ -30,13 +41,14 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.io.File
 import javax.swing.JComponent
-import javax.swing.JSplitPane
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
 
 class AppSecToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        toolWindow.setDefaultContentUiType(ToolWindowContentUiType.TABBED)
+
         val appSecToolWindow = AppSecToolWindow(project, toolWindow.disposable)
         val content = ContentFactory.getInstance().createContent(appSecToolWindow.getContent(), "", false)
         toolWindow.contentManager.addContent(content)
@@ -49,6 +61,7 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     init {
         Disposer.register(parentDisposable) {
             scope.cancel()
@@ -61,13 +74,54 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
     private val descriptionBrowser = JBCefBrowser().apply {
         loadHTML(getEmptyStateHtml())
     }
+    private val loadingIcon = JBLabel(AnimatedIcon.Default())
+    private var refreshAction: AnAction? = null
+    private var toggleAction: AnAction? = null
+    private var toolbar: ActionToolbar? = null
+    private var isDescriptionVisible = true
+    private var splitPane: JBSplitter? = null
 
     fun getContent(): JComponent {
-        val treePanel = JBScrollPane(tree)
+        val treePanel = JBScrollPane(tree).apply {
+            border = JBUI.Borders.empty()
+            preferredSize = JBUI.size(250, 0)
+        }
+
         val descriptionPanel = descriptionBrowser.component
 
-        val splitPane = JSplitPane(JSplitPane.VERTICAL_SPLIT, treePanel, descriptionPanel).apply {
-            dividerLocation = 400
+        splitPane = JBSplitter(true).apply {
+            firstComponent = treePanel
+            secondComponent = descriptionPanel
+            proportion = 0.6f
+            preferredSize = JBUI.size(250, 500)
+        }
+
+        refreshAction = object : AnAction("Refresh Findings", "Refresh findings", AllIcons.Actions.Refresh) {
+            override fun actionPerformed(e: AnActionEvent) {
+                refreshFindings()
+            }
+        }
+
+        toggleAction = object : AnAction(getToggleButtonTooltip(), getToggleButtonTooltip(), getToggleButtonIcon()) {
+            override fun actionPerformed(e: AnActionEvent) {
+                toggleDescriptionPanel()
+            }
+        }
+
+        val actionGroup = DefaultActionGroup().apply {
+            add(refreshAction!!)
+            addSeparator()
+            add(toggleAction!!)
+        }
+
+        toolbar = ActionManager.getInstance().createActionToolbar(
+            ActionPlaces.TOOLWINDOW_TOOLBAR_BAR,
+            actionGroup,
+            true
+        ).apply {
+            targetComponent = splitPane
+            component.border = JBUI.Borders.empty(2, 0)
+            minimumButtonSize = JBUI.size(22, 22)
         }
 
         setupTreeListeners()
@@ -75,13 +129,16 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
 
         return panel {
             row {
-                button("Refresh") {
-                    refreshFindings()
+                cell(toolbar!!.component)
+                cell(loadingIcon).apply {
+                    visible(false)
                 }
             }
             row {
-                cell(splitPane).align(Align.FILL).resizableColumn()
+                cell(splitPane!!).align(Align.FILL).resizableColumn()
             }.resizableRow()
+        }.apply {
+            border = JBUI.Borders.empty(JBUI.insetsLeft(1))
         }.also {
             scope.launch {
                 setLoadingState("Initializing...")
@@ -99,8 +156,45 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
         })
     }
 
+    private fun getToggleButtonTooltip(): String {
+        return "Hide/Show Description"
+    }
+
+    private fun getToggleButtonIcon() = AllIcons.General.EditorPreviewVertical
+
+    private fun toggleDescriptionPanel() {
+        isDescriptionVisible = !isDescriptionVisible
+        splitPane?.let { sp ->
+            if (isDescriptionVisible) {
+                sp.secondComponent = descriptionBrowser.component
+                sp.proportion = 0.6f
+            } else {
+                sp.secondComponent = null
+                sp.proportion = 1.0f
+            }
+            sp.revalidate()
+            sp.repaint()
+        }
+
+        toggleAction?.let { action ->
+            action.templatePresentation.icon = getToggleButtonIcon()
+            action.templatePresentation.description = getToggleButtonTooltip()
+        }
+
+        toolbar?.updateActionsImmediately()
+    }
+
+    private fun setLoadingIndicator(visible: Boolean) {
+        ApplicationManager.getApplication().invokeLater {
+            loadingIcon.isVisible = visible
+            refreshAction?.templatePresentation?.isEnabled = !visible
+            toolbar?.updateActionsImmediately()
+        }
+    }
+
     private fun refreshFindings() {
         scope.launch {
+            setLoadingIndicator(true)
             try {
                 setLoadingState("Looking for Git repository...")
                 val repoUrl = getProjectRepositoryUrl()
@@ -133,7 +227,29 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
                 LOG.info("Found matching asset for Product ID: $productID")
 
                 setLoadingState("Loading findings for Product ID: $productID...")
-                val findings = FindingApi.getFindings(FindingsQueryParams(product = productID)).results
+                val settings = AppSecPluginSettings.instance.state
+
+                val enabledSeverities = settings.enabledSeverities.mapNotNull { severityName ->
+                    try {
+                        Severity.valueOf(severityName)
+                    } catch (e: IllegalArgumentException) {
+                        null
+                    }
+                }
+
+                val enabledTriageStatuses = settings.enabledTriageStatuses.mapNotNull { statusName ->
+                    try {
+                        TriageStatus.valueOf(statusName)
+                    } catch (e: IllegalArgumentException) {
+                        null
+                    }
+                }
+
+                val findings = FindingApi.getFindings(FindingsQueryParams(
+                    product = productID,
+                    severityIn = enabledSeverities.ifEmpty { null },
+                    triageStatusIn = enabledTriageStatuses.ifEmpty { null }
+                )).results.take(settings.maxFindings)
 
                 if (findings.isEmpty()) {
                     setLoadingState("No findings found for this repository.")
@@ -147,6 +263,8 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
             } catch (e: Exception) {
                 setLoadingState("An error occurred: ${e.message}")
                 LOG.error("Failed to refresh findings", e)
+            } finally {
+                setLoadingIndicator(false)
             }
         }
     }
@@ -226,7 +344,8 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
         val virtualFile = LocalFileSystem.getInstance().findFileByIoFile(file)
 
         if (virtualFile != null) {
-            FileEditorManager.getInstance(project).openTextEditor(OpenFileDescriptor(project, virtualFile, line, 0), true)
+            FileEditorManager.getInstance(project)
+                .openTextEditor(OpenFileDescriptor(project, virtualFile, line, 0), true)
         } else {
             LOG.warn("Could not find file in project: ${file.absolutePath}")
         }

@@ -52,7 +52,6 @@ object FindingPopupManager {
 
         markdown.append("## ${finding.name}\n\n")
 
-        // Add severity badge
         val severityColor = when (finding.severity.name.lowercase()) {
             "critical" -> "#ff0000"
             "high" -> "#ff8800"
