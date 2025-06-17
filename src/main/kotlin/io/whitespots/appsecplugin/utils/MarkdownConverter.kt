@@ -9,14 +9,6 @@ object MarkdownConverter {
     private val parser: Parser = Parser.builder(options).build()
     private val renderer: HtmlRenderer = HtmlRenderer.builder(options).build()
 
-    fun toHtml(markdown: String?): String {
-        if (markdown.isNullOrBlank()) {
-            return "<html><body><p>No description provided.</p></body></html>"
-        }
-        val document = parser.parse(markdown)
-        return renderer.render(document)
-    }
-
     fun toStyledHtml(markdown: String?): String {
         if (markdown.isNullOrBlank()) {
             return ThemeUtils.createStyledHtmlTemplate("<p>No description provided.</p>", "Finding Description")

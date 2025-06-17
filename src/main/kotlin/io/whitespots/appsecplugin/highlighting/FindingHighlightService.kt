@@ -1,6 +1,5 @@
 package io.whitespots.appsecplugin.highlighting
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Editor
@@ -8,8 +7,9 @@ import com.intellij.openapi.editor.markup.*
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.JBColor
 import io.whitespots.appsecplugin.models.Finding
 import io.whitespots.appsecplugin.models.Severity
@@ -55,7 +55,7 @@ class FindingHighlightService(private val project: Project) {
             }
         }
 
-        ApplicationManager.getApplication().invokeLater {
+        ToolWindowManager.getInstance(project).invokeLater {
             val fileEditorManager = FileEditorManager.getInstance(project)
             val allEditors = fileEditorManager.allEditors
             LOG.info("Applying highlights to ${allEditors.size} open editors")
@@ -152,7 +152,6 @@ class FindingHighlightService(private val project: Project) {
     }
 
     private fun getRelativeFilePath(virtualFile: VirtualFile): String? {
-        val projectBasePath = project.basePath ?: return null
         val projectBaseVirtualFile = project.baseDir ?: return null
 
         val relativePath = VfsUtil.getRelativePath(virtualFile, projectBaseVirtualFile)

@@ -1,12 +1,12 @@
 package io.whitespots.appsecplugin.listeners
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.wm.ToolWindowManager
 import io.whitespots.appsecplugin.highlighting.FindingHighlightService
 
 class EditorListener(private val project: Project) : FileEditorManagerListener {
@@ -24,7 +24,7 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
         if (findings.isNotEmpty()) {
             LOG.info("Highlighting ${findings.size} findings in opened file: ${file.name}")
 
-            ApplicationManager.getApplication().invokeLater {
+            ToolWindowManager.getInstance(project).invokeLater {
                 val fileEditor = source.getSelectedEditor(file)
                 LOG.debug("Selected editor type: ${fileEditor?.javaClass?.simpleName}")
                 if (fileEditor is TextEditor) {

@@ -12,6 +12,7 @@
     <depends>Git4Idea</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="Whitespots AppSec" displayType="BALLOON"/>
         <applicationService
                 serviceImplementation="io.whitespots.appsecplugin.services.AppSecPluginSettings"/>
         <applicationConfigurable
@@ -20,7 +21,7 @@
                 displayName="Whitespots AppSec"
                 instance="io.whitespots.appsecplugin.settings.AppSecPluginSettingsConfigurable"/>
         <toolWindow
-                id="Whitespots AppSec"
+                id="Whitespots"
                 anchor="right"
                 icon="/icons/appsec.svg"
                 factoryClass="io.whitespots.appsecplugin.toolWindow.AppSecToolWindowFactory"/>
