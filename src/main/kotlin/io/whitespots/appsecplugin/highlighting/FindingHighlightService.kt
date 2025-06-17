@@ -6,6 +6,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.*
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.TextEditor
+import com.intellij.openapi.project.BaseProjectDirectories.Companion.getBaseDirectories
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
@@ -152,9 +153,9 @@ class FindingHighlightService(private val project: Project) {
     }
 
     private fun getRelativeFilePath(virtualFile: VirtualFile): String? {
-        val projectBaseVirtualFile = project.baseDir ?: return null
+        val projectBaseVirtualFile = project.getBaseDirectories()
 
-        val relativePath = VfsUtil.getRelativePath(virtualFile, projectBaseVirtualFile)
+        val relativePath = VfsUtil.getRelativePath(virtualFile, projectBaseVirtualFile.first())
         return relativePath
     }
 
