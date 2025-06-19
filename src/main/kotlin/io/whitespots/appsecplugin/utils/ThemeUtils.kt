@@ -12,6 +12,7 @@ import io.whitespots.appsecplugin.models.TriageStatus
 import io.whitespots.appsecplugin.services.AppSecPluginSettings
 import io.whitespots.appsecplugin.services.FindingRejectionService
 import io.whitespots.appsecplugin.services.FindingsRefreshTopics
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -256,7 +257,7 @@ object ThemeUtils {
         """.trimIndent()
     }
 
-    fun buildFindingMarkdown(project: Project, finding: Finding): String {
+    fun buildFindingMarkdown(finding: Finding): String {
         val markdown = StringBuilder()
 
         val settings = service<AppSecPluginSettings>().state
@@ -318,7 +319,7 @@ object ThemeUtils {
         }
 
         val htmlContent = MarkdownConverter.toStyledHtml(
-            buildFindingMarkdown(project, finding)
+            buildFindingMarkdown(finding)
         )
 
         val htmlWithJS = htmlContent.replace(
@@ -339,6 +340,7 @@ object ThemeUtils {
         browser.loadHTML(htmlWithJS)
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     private fun handleRejectFinding(project: Project, finding: Finding) {
         GlobalScope.launch(Dispatchers.IO) {
             try {

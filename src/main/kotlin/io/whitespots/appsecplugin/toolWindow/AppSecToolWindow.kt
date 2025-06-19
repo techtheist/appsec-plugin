@@ -21,13 +21,9 @@ import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.tree.TreeUtil
-import io.whitespots.appsecplugin.exceptions.ApiClientConfigurationException
-import io.whitespots.appsecplugin.exceptions.FindingsException
-import io.whitespots.appsecplugin.highlighting.FindingHighlightService
 import io.whitespots.appsecplugin.models.Finding
-import io.whitespots.appsecplugin.services.FindingsRefreshListener
-import io.whitespots.appsecplugin.services.FindingsRefreshTopics
-import io.whitespots.appsecplugin.services.FindingsService
+import io.whitespots.appsecplugin.services.FindingsState
+import io.whitespots.appsecplugin.services.ProjectFindingsService
 import io.whitespots.appsecplugin.settings.AppSecPluginSettingsConfigurable
 import io.whitespots.appsecplugin.utils.ThemeUtils
 import kotlinx.coroutines.*
@@ -39,12 +35,13 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
 
-class AppSecToolWindow(private val project: Project, private val parentDisposable: Disposable) {
+class AppSecToolWindow(private val project: Project, parentDisposable: Disposable) {
     companion object {
         private val LOG = logger<AppSecToolWindow>()
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val projectFindingsService = ProjectFindingsService.getInstance(project)
 
     init {
         Disposer.register(parentDisposable) {
@@ -88,7 +85,6 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
         createActions()
         createToolbar()
         setupTreeListeners()
-        subscribeToEvents()
 
         return panel {
             row {
@@ -103,9 +99,7 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
                     .align(Align.FILL)
             }.resizableRow()
         }.also {
-            scope.launch {
-                setLoadingState("Refresh to get findings")
-            }
+            observeFindingsState()
         }
     }
 
@@ -171,16 +165,6 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
         }
     }
 
-    private fun subscribeToEvents() {
-        val connection = project.messageBus.connect(parentDisposable)
-
-        connection.subscribe(FindingsRefreshTopics.REFRESH_TOPIC, object : FindingsRefreshListener {
-            override fun onRefreshRequested() {
-                LOG.info("Received refresh request from message bus.")
-                refreshFindings()
-            }
-        })
-    }
 
     private fun toggleDescriptionPanel() {
         isDescriptionVisible = !isDescriptionVisible
@@ -217,27 +201,8 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
     }
 
     private fun refreshFindings() {
-        scope.launch {
-            setLoadingIndicator(true)
-            try {
-                val findingsService = FindingsService(project)
-                val findings = findingsService.refreshFindings { status ->
-                    setLoadingState(status)
-                }
-                updateTree(findings)
-            } catch (e: ApiClientConfigurationException) {
-                setLoadingState("Plugin not configured. Go to Settings/Preferences > Tools > Whitespots AppSec.")
-                LOG.warn(e)
-            } catch (e: FindingsException) {
-                setLoadingState(e.message ?: "An error occurred while loading findings")
-                LOG.warn(e)
-            } catch (e: Exception) {
-                setLoadingState("An error occurred: ${e.message}")
-                LOG.error("Failed to refresh findings", e)
-            } finally {
-                setLoadingIndicator(false)
-            }
-        }
+        LOG.info("Manual refresh requested from toolbar")
+        projectFindingsService.refreshFindings()
     }
 
     private suspend fun updateTree(findings: List<Finding>) = withContext(Dispatchers.Main) {
@@ -258,8 +223,7 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
         TreeUtil.expandAll(tree)
         clearDescription()
 
-        val highlightService = FindingHighlightService.getInstance(project)
-        highlightService.updateFindings(findings)
+        LOG.debug("Updated tree view with ${findings.size} findings")
     }
 
     private suspend fun setLoadingState(message: String) = withContext(Dispatchers.Main) {
@@ -267,6 +231,38 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
         rootNode.userObject = DefaultMutableTreeNode(message)
         treeModel.reload(rootNode)
         clearDescription()
+    }
+
+    private fun observeFindingsState() {
+        scope.launch {
+            projectFindingsService.findingsState.collect { state ->
+                when (state) {
+                    is FindingsState.NotLoaded -> {
+                        setLoadingState("Ready - findings will load automatically")
+                        setLoadingIndicator(false)
+                    }
+                    is FindingsState.Loading -> {
+                        setLoadingIndicator(true)
+                    }
+                    is FindingsState.Loaded -> {
+                        updateTree(state.findings)
+                        setLoadingIndicator(false)
+                    }
+                    is FindingsState.Error -> {
+                        setLoadingState(state.message)
+                        setLoadingIndicator(false)
+                    }
+                }
+            }
+        }
+
+        scope.launch {
+            projectFindingsService.statusMessage.collect { message ->
+                if (projectFindingsService.findingsState.value is FindingsState.Loading) {
+                    setLoadingState(message)
+                }
+            }
+        }
     }
 
 
@@ -323,7 +319,7 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
     data class FileTreeNode(val filePath: String, val count: Int) : DefaultMutableTreeNode() {
         override fun toString(): String {
             val fileName = filePath.substringAfterLast('/')
-            return "$fileName count: $count"
+            return "$count - $fileName"
         }
     }
 

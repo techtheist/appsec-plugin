@@ -20,7 +20,6 @@ object SeveritySerializer : KSerializer<Severity> {
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 @Serializable(with = SeveritySerializer::class)
 enum class Severity(val intValue: Int) {
     INFO(0),

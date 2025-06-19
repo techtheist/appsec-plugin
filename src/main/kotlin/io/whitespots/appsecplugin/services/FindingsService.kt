@@ -3,10 +3,16 @@ package io.whitespots.appsecplugin.services
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import git4idea.repo.GitRepositoryManager
-import io.whitespots.appsecplugin.api.*
+import io.whitespots.appsecplugin.api.AssetApi
+import io.whitespots.appsecplugin.api.AssetQueryParams
+import io.whitespots.appsecplugin.api.FindingApi
+import io.whitespots.appsecplugin.api.FindingsQueryParams
 import io.whitespots.appsecplugin.exceptions.FindingsException
-import io.whitespots.appsecplugin.models.*
-import io.whitespots.appsecplugin.utils.GitUrlParser
+import io.whitespots.appsecplugin.models.AssetType
+import io.whitespots.appsecplugin.models.Finding
+import io.whitespots.appsecplugin.models.Severity
+import io.whitespots.appsecplugin.models.TriageStatus
+import io.whitespots.appsecplugin.utils.GitUtils
 
 class FindingsService(private val project: Project) {
     companion object {
@@ -19,7 +25,7 @@ class FindingsService(private val project: Project) {
             ?: throw FindingsException("Could not find a Git repository with a remote URL in this project.")
 
         onStatusUpdate("Parsing Git repository URL...")
-        val parsedUrl = GitUrlParser.parse(repoUrl)
+        val parsedUrl = GitUtils.parse(repoUrl)
             ?: throw FindingsException("Could not parse Git repository URL: $repoUrl")
 
         onStatusUpdate("Searching for assets: ${parsedUrl.domain}/${parsedUrl.path}...")
@@ -43,7 +49,7 @@ class FindingsService(private val project: Project) {
         val enabledSeverities = settings.enabledSeverities.mapNotNull { severityName ->
             try {
                 Severity.valueOf(severityName)
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 null
             }
         }
@@ -51,7 +57,7 @@ class FindingsService(private val project: Project) {
         val enabledTriageStatuses = settings.enabledTriageStatuses.mapNotNull { statusName ->
             try {
                 TriageStatus.valueOf(statusName)
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 null
             }
         }

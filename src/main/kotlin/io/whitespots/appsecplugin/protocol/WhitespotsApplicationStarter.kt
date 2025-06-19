@@ -7,7 +7,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.Messages
 import io.whitespots.appsecplugin.services.AppSecPluginSettings
-import io.whitespots.appsecplugin.services.FindingsRefreshTopics
+import io.whitespots.appsecplugin.services.ProjectFindingsService
 import io.whitespots.appsecplugin.settings.AppSecPluginSettingsConfigurable
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -141,8 +141,8 @@ class WhitespotsApplicationStarter : ApplicationStarter {
     private fun refreshFindings() {
         try {
             ProjectManager.getInstance().openProjects.forEach { project ->
-                project.messageBus.syncPublisher(FindingsRefreshTopics.REFRESH_TOPIC)
-                    .onRefreshRequested()
+                val findingsService = project.getService(ProjectFindingsService::class.java)
+                findingsService?.refreshFindings()
             }
         } catch (e: Exception) {
             LOG.warn("Failed to refresh findings", e)
