@@ -1,12 +1,12 @@
 package io.whitespots.appsecplugin.utils
 
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import git4idea.config.GitConfigUtil
 import git4idea.repo.GitRepositoryManager
 
 object GitUtils {
-    private val LOG = Logger.getInstance(GitUtils::class.java)
+    private val LOG = logger<GitUtils>()
 
     fun getGitEmail(project: Project): String? {
         return try {

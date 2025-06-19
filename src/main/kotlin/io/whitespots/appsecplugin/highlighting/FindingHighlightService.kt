@@ -1,7 +1,7 @@
 package io.whitespots.appsecplugin.highlighting
 
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.*
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Service(Service.Level.PROJECT)
 class FindingHighlightService(private val project: Project) {
     companion object {
-        private val LOG = Logger.getInstance(FindingHighlightService::class.java)
+        private val LOG = logger<FindingHighlightService>()
 
         fun getInstance(project: Project): FindingHighlightService {
             return project.getService(FindingHighlightService::class.java)
@@ -32,34 +32,21 @@ class FindingHighlightService(private val project: Project) {
     private val findingsByFile = ConcurrentHashMap<String, MutableList<Finding>>()
 
     fun updateFindings(findings: List<Finding>) {
-        LOG.info("Updating ${findings.size} findings across project")
+        LOG.debug("Updating ${findings.size} findings across project")
         clearAllHighlights()
         findingsByFile.clear()
 
         val validFindings = findings.filter { !it.filePath.isNullOrBlank() && it.line != null }
-        if (LOG.isDebugEnabled) {
-            LOG.debug("Found ${validFindings.size} valid findings with file paths and line numbers")
-            validFindings.forEach { finding ->
-                LOG.debug("Adding finding for file: ${finding.filePath}, line: ${finding.line}")
-            }
-        }
 
         validFindings.forEach { finding ->
             val filePath = finding.filePath!!
             findingsByFile.computeIfAbsent(filePath) { mutableListOf() }.add(finding)
         }
 
-        LOG.info("Grouped findings into ${findingsByFile.size} files")
-        if (LOG.isDebugEnabled) {
-            findingsByFile.forEach { (filePath, findings) ->
-                LOG.debug("File: $filePath has ${findings.size} findings")
-            }
-        }
-
         ToolWindowManager.getInstance(project).invokeLater {
             val fileEditorManager = FileEditorManager.getInstance(project)
             val allEditors = fileEditorManager.allEditors
-            LOG.info("Applying highlights to ${allEditors.size} open editors")
+            LOG.debug("Applying highlights to ${allEditors.size} open editors")
 
             var highlightedFiles = 0
             allEditors.forEach { fileEditor ->
@@ -72,12 +59,9 @@ class FindingHighlightService(private val project: Project) {
                         LOG.debug("Applying highlights to file: $relativePath")
                         highlightFindingsInEditor(fileEditor.editor, virtualFile, findingsByFile[relativePath]!!)
                         highlightedFiles++
-                    } else if (LOG.isDebugEnabled) {
-                        LOG.debug("No findings for file: $relativePath")
                     }
                 }
             }
-            LOG.info("Applied highlights to $highlightedFiles files")
         }
     }
 
@@ -86,14 +70,13 @@ class FindingHighlightService(private val project: Project) {
         LOG.debug("Highlighting ${findings.size} findings in ${virtualFile.name}, enabled: $highlightingEnabled")
 
         if (!highlightingEnabled) {
-            LOG.debug("Highlighting is disabled in settings")
+            LOG.info("Highlighting is disabled in settings")
             return
         }
 
         val document = editor.document
         val markupModel = editor.markupModel
         val highlighters = mutableListOf<RangeHighlighter>()
-        LOG.debug("Document has ${document.lineCount} lines")
 
         var successfulHighlights = 0
         findings.forEach { finding ->
@@ -126,7 +109,6 @@ class FindingHighlightService(private val project: Project) {
         }
 
         fileHighlighters[virtualFile] = highlighters
-        LOG.info("Added ${successfulHighlights}/${findings.size} highlighters for ${virtualFile.name}")
     }
 
     fun clearHighlightsForFile(virtualFile: VirtualFile) {

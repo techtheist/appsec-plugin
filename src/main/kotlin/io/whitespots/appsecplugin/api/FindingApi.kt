@@ -1,6 +1,6 @@
 package io.whitespots.appsecplugin.api
 
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -38,7 +38,7 @@ data class FindingsQueryParams(
 )
 
 object FindingApi {
-    private val LOG = Logger.getInstance(FindingApi::class.java)
+    private val LOG = logger<FindingApi>()
     private val httpClient = ApiClient.client
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -53,27 +53,68 @@ object FindingApi {
                     params.search?.let { parameters.append("search", it) }
                     params.page?.let { parameters.append("page", it.toString()) }
                     params.severityIn?.let { severities ->
-                        parameters.append("severity__in", severities.joinToString(",") { s -> s.intValue.toString() })
+                        val severityValues = severities.joinToString(",") { s -> s.intValue.toString() }
+                        parameters.append("severity__in", severityValues)
                     }
                     params.triageStatusIn?.let { statuses ->
-                        parameters.append("triage_status__in", statuses.joinToString(",") { s -> s.intValue.toString() })
+                        val statusValues = statuses.joinToString(",") { s -> s.intValue.toString() }
+                        parameters.append("triage_status__in", statusValues)
                     }
                     params.assetsIn?.let { assetsMap ->
                         val jsonString = json.encodeToString(assetsMap)
                         parameters.append("assets__in", jsonString)
                     }
+
+                    LOG.debug("Complete request URL parameters: ${this.parameters.entries()}")
                 }
             }
-
             LOG.info("Received response with status: ${response.status}")
+            LOG.info("Response body: ${response.body<PaginatedResponse<Finding>>()}")
+
             if (!response.status.isSuccess()) {
                 LOG.warn("Error response body: ${response.bodyAsText()}")
+                throw Exception("API request failed with status ${response.status}")
             }
-            return response.body()
+
+            val result: PaginatedResponse<Finding> = response.body()
+            LOG.debug("Received ${result.results.size} findings on this page. Total count: ${result.count}, Next: ${result.next != null}, Previous: ${result.previous != null}")
+
+            return result
         } catch (e: Exception) {
             LOG.error("Failed to execute request to $endpointPath", e)
             throw e
         }
+    }
+
+    suspend fun getAllFindings(params: FindingsQueryParams, maxFindings: Int = Int.MAX_VALUE): List<Finding> {
+        val allFindings = mutableListOf<Finding>()
+        var currentPage = 1
+        var hasMorePages = true
+
+        while (hasMorePages && allFindings.size < maxFindings) {
+            val pageParams = params.copy(page = currentPage)
+            LOG.debug("Fetching page $currentPage")
+
+            val response = getFindings(pageParams)
+            allFindings.addAll(response.results)
+
+            hasMorePages = response.next != null
+            currentPage++
+
+            if (allFindings.size >= maxFindings) {
+                LOG.info("Reached maximum findings limit of $maxFindings")
+                break
+            }
+        }
+
+        val finalResults = if (allFindings.size > maxFindings) {
+            allFindings.take(maxFindings)
+        } else {
+            allFindings
+        }
+
+        LOG.info("Retrieved ${finalResults.size} total findings across $currentPage pages")
+        return finalResults
     }
 
     suspend fun setStatus(findingId: Long, status: TriageStatus, comment: String? = null): Boolean {
@@ -91,7 +132,7 @@ object FindingApi {
                 contentType(ContentType.Application.Json)
             }
 
-            LOG.info("Set status response: ${response.status}")
+            LOG.debug("Set status response: ${response.status}")
             return response.status.isSuccess()
         } catch (e: Exception) {
             LOG.error("Failed to set finding status", e)
@@ -109,7 +150,7 @@ object FindingApi {
                 contentType(ContentType.Application.Json)
             }
 
-            LOG.info("Add tag response: ${response.status}")
+            LOG.debug("Add tag response: ${response.status}")
             if (!response.status.isSuccess()) {
                 val responseBody = response.bodyAsText()
                 LOG.warn("Add tag failed - Response body: $responseBody")

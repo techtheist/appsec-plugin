@@ -20,7 +20,6 @@ object TriageStatusSerializer : KSerializer<TriageStatus> {
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 @Serializable(with = TriageStatusSerializer::class)
 enum class TriageStatus(val intValue: Int) {
     RESOLVED(0),

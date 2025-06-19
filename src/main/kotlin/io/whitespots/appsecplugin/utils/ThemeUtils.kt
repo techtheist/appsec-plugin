@@ -1,6 +1,21 @@
 package io.whitespots.appsecplugin.utils
 
 import com.intellij.ide.ui.LafManager
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
+import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.jcef.JBCefBrowserBase
+import com.intellij.ui.jcef.JBCefJSQuery
+import io.whitespots.appsecplugin.models.Finding
+import io.whitespots.appsecplugin.models.TriageStatus
+import io.whitespots.appsecplugin.services.AppSecPluginSettings
+import io.whitespots.appsecplugin.services.FindingRejectionService
+import io.whitespots.appsecplugin.services.FindingsRefreshTopics
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object ThemeUtils {
     fun isDarkTheme(): Boolean {
@@ -239,5 +254,125 @@ object ThemeUtils {
             </body>
             </html>
         """.trimIndent()
+    }
+
+    fun buildFindingMarkdown(project: Project, finding: Finding): String {
+        val markdown = StringBuilder()
+
+        val settings = service<AppSecPluginSettings>().state
+        val severityColor = when (finding.severity.name.lowercase()) {
+            "critical" -> "#ff0000"
+            "high" -> "#ff8800"
+            "medium" -> "#ffaa00"
+            "low" -> "#00aa00"
+            "info" -> "#0088ff"
+            else -> "#888888"
+        }
+        val url = "<a href='${settings.apiUrl}/products/${finding.product}/findings/${finding.id}' target='_blank'>${finding.id}</a>"
+
+        markdown.append("### ${url}: <span style='color: $severityColor; font-weight: bold;'>${finding.severity.name}</span> - ${finding.name}\n\n")
+
+        markdown.append("### Status: ${finding.triageStatus.name.lowercase().replaceFirstChar { it.uppercase() }}\n\n")
+
+        if (finding.triageStatus != TriageStatus.REJECTED) {
+            markdown.append("[Reject this finding](reject-finding:${finding.id})\n\n")
+        }
+
+        if (!finding.lineText.isNullOrBlank()) {
+            markdown.append("### Code snippet:\n\n")
+            markdown.append("```${finding.language}\n${finding.lineText}\n```")
+            markdown.append("\n\n")
+        }
+
+        if (!finding.description.isNullOrBlank()) {
+            markdown.append("### Description\n\n")
+            markdown.append(finding.description)
+            markdown.append("\n\n")
+        }
+
+        if (finding.tags.isNotEmpty()) {
+            markdown.append("### Tags\n\n")
+            finding.tags.forEach { tag ->
+                markdown.append("- `$tag`\n")
+            }
+            markdown.append("\n")
+        }
+
+        return markdown.toString()
+    }
+
+    fun prepareMarkdownPage(
+        browser: JBCefBrowser,
+        finding: Finding,
+        project: Project
+    ) {
+        val jsQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
+        jsQuery.addHandler { query ->
+            if (query.startsWith("reject-finding:")) {
+                val findingId = query.substringAfter("reject-finding:").toLongOrNull()
+                if (findingId != null && findingId == finding.id) {
+                    handleRejectFinding(project, finding)
+                }
+            }
+            null
+        }
+
+        val htmlContent = MarkdownConverter.toStyledHtml(
+            buildFindingMarkdown(project, finding)
+        )
+
+        val htmlWithJS = htmlContent.replace(
+            "</body>",
+            """
+                <script>
+                    document.addEventListener('click', function(e) {
+                        if (e.target.tagName === 'A' && e.target.href.startsWith('reject-finding:')) {
+                            e.preventDefault();
+                            ${jsQuery.inject("e.target.href")};
+                        }
+                    });
+                </script>
+                </body>
+                """.trimIndent()
+        )
+
+        browser.loadHTML(htmlWithJS)
+    }
+
+    private fun handleRejectFinding(project: Project, finding: Finding) {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val rejectionService = FindingRejectionService.getInstance(project)
+                val result = rejectionService.rejectFinding(finding)
+
+                withContext(Dispatchers.Main) {
+                    if (result.isSuccess) {
+                        Messages.showInfoMessage(
+                            project,
+                            "Finding ${finding.id} has been rejected successfully.",
+                            "Finding Rejected"
+                        )
+
+                        project.messageBus.syncPublisher(FindingsRefreshTopics.REFRESH_TOPIC)
+                            .onRefreshRequested()
+                    } else {
+                        val error = result.exceptionOrNull()
+                        Messages.showErrorDialog(
+                            project,
+                            "Failed to reject finding ${finding.id}: ${error?.message ?: "Unknown error"}",
+                            "Rejection Failed"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Messages.showErrorDialog(
+                        project,
+                        "Failed to reject finding ${finding.id}: ${e.message}",
+                        "Rejection Failed"
+                    )
+                }
+            }
+        }
     }
 }

@@ -7,7 +7,7 @@ import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.util.Key
 import io.whitespots.appsecplugin.models.Finding
 import io.whitespots.appsecplugin.models.Severity
-import io.whitespots.appsecplugin.popup.FindingPopupManager
+import io.whitespots.appsecplugin.utils.FindingPopupManager
 import javax.swing.Icon
 
 class FindingHighlightGutterIconRenderer(private val finding: Finding) : GutterIconRenderer() {
@@ -30,7 +30,7 @@ class FindingHighlightGutterIconRenderer(private val finding: Finding) : GutterI
         return "${finding.severity.name} - ${finding.name}\nClick to view details"
     }
 
-    override fun getClickAction(): AnAction? {
+    override fun getClickAction(): AnAction {
         return object : AnAction() {
             override fun actionPerformed(e: AnActionEvent) {
                 val project = e.project ?: return

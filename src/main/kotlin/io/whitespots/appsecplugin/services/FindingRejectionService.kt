@@ -1,10 +1,10 @@
 package io.whitespots.appsecplugin.services
 
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import io.whitespots.appsecplugin.api.TagRequest
 import io.whitespots.appsecplugin.api.FindingApi
+import io.whitespots.appsecplugin.api.TagRequest
 import io.whitespots.appsecplugin.models.Finding
 import io.whitespots.appsecplugin.models.TriageStatus
 import io.whitespots.appsecplugin.utils.GitUtils
@@ -15,7 +15,7 @@ import kotlinx.coroutines.coroutineScope
 @Service(Service.Level.PROJECT)
 class FindingRejectionService(private val project: Project) {
     companion object {
-        private val LOG = Logger.getInstance(FindingRejectionService::class.java)
+        private val LOG = logger<FindingRejectionService>()
 
         fun getInstance(project: Project): FindingRejectionService {
             return project.getService(FindingRejectionService::class.java)

@@ -8,18 +8,16 @@ data class Finding(
     val id: Long,
     val name: String,
     val description: String?,
-    @SerialName("file_path")
-    val filePath: String?,
+    @SerialName("file_path") val filePath: String?,
     val line: Int?,
     val severity: Severity,
-    @SerialName("current_sla_level")
-    val triageStatus: TriageStatus,
+    @SerialName("current_sla_level") val triageStatus: TriageStatus,
     val product: Long,
-    @SerialName("date_created")
-    val dateCreated: String?,
-    @SerialName("dojo_finding_url")
-    val findingUrl: String?,
-    val tags: List<String> = emptyList()
+    @SerialName("date_created") val dateCreated: String?,
+    @SerialName("dojo_finding_url") val findingUrl: String?,
+    val tags: List<String> = emptyList(),
+    @SerialName("line_text") val lineText: String? = null,
+    val language: String? = null
 )
 
 @Serializable

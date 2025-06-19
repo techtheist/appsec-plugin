@@ -4,21 +4,20 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VirtualFile
 import io.whitespots.appsecplugin.highlighting.FindingHighlightService
 import io.whitespots.appsecplugin.models.Finding
 import io.whitespots.appsecplugin.models.Severity
 import io.whitespots.appsecplugin.models.TriageStatus
 
-class HighlightDebugAction : AnAction("Test AppSec Highlighting") {
-
+class HighlightDebugAction : AnAction() {
     companion object {
-        private val LOG = Logger.getInstance(HighlightDebugAction::class.java)
+        private val LOG = logger<HighlightDebugAction>()
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread {
@@ -33,7 +32,7 @@ class HighlightDebugAction : AnAction("Test AppSec Highlighting") {
         LOG.info("Debug action triggered for file: ${virtualFile.path}")
 
         val caretModel = editor.caretModel
-        val currentLine = caretModel.logicalPosition.line + 1 // Convert to 1-based
+        val currentLine = caretModel.logicalPosition.line + 1
 
         val testFinding = Finding(
             id = 999L,
@@ -41,12 +40,14 @@ class HighlightDebugAction : AnAction("Test AppSec Highlighting") {
             description = "This is a test finding to verify highlighting functionality",
             filePath = getRelativeFilePath(project, virtualFile),
             line = currentLine,
-            severity = Severity.HIGH,
-            triageStatus = TriageStatus.VERIFIED,
+            severity = Severity.CRITICAL,
+            triageStatus = TriageStatus.ASSIGNED,
             product = 1L,
             dateCreated = null,
-            findingUrl = null,
-            tags = listOf("test")
+            findingUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            tags = listOf("test"),
+            language = "Kotlin",
+            lineText = "var constantVal = 123"
         )
 
         LOG.info("Created test finding for line $currentLine with path: ${testFinding.filePath}")

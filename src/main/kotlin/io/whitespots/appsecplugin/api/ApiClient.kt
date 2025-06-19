@@ -1,5 +1,7 @@
 package io.whitespots.appsecplugin.api
 
+import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -7,15 +9,12 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.whitespots.appsecplugin.exceptions.ApiClientConfigurationException
 import io.whitespots.appsecplugin.services.AppSecPluginSettings
 import kotlinx.serialization.json.Json
-import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.Logger
-
-class ApiClientConfigurationException(message: String) : Exception(message)
 
 object ApiClient {
-    private val LOG = Logger.getInstance(ApiClient::class.java)
+    private val LOG = logger<ApiClient>()
     private const val API_BASE_PATH = "/api/v1/"
 
     val client: HttpClient by lazy {

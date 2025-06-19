@@ -1,6 +1,6 @@
 package io.whitespots.appsecplugin.toolWindow
 
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
@@ -13,7 +13,7 @@ import javax.swing.JComponent
 
 class WebViewToolWindow(private val project: Project) {
     companion object {
-        private val LOG = Logger.getInstance(WebViewToolWindow::class.java)
+        private val LOG = logger<WebViewToolWindow>()
     }
 
     private val browser = JBCefBrowser()

@@ -1,6 +1,6 @@
 package io.whitespots.appsecplugin.api
 
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.whitespots.appsecplugin.models.Asset
@@ -12,7 +12,7 @@ data class AssetQueryParams(
 )
 
 object AssetApi {
-    private val LOG = Logger.getInstance(AssetApi::class.java)
+    private val LOG = logger<AssetApi>()
     private val httpClient = ApiClient.client
 
     suspend fun getAssets(params: AssetQueryParams): PaginatedResponse<Asset> {

@@ -2,7 +2,7 @@ package io.whitespots.appsecplugin.protocol
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ApplicationStarter
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.Messages
@@ -23,7 +23,7 @@ import java.util.regex.Pattern
  */
 class WhitespotsApplicationStarter : ApplicationStarter {
     companion object {
-        private val LOG = Logger.getInstance(WhitespotsApplicationStarter::class.java)
+        private val LOG = logger<WhitespotsApplicationStarter>()
     }
     private val TOKEN_PATTERN = Pattern.compile("^[a-zA-Z0-9]{32,128}$")
 

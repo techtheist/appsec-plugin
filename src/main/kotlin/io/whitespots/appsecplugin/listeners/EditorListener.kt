@@ -1,6 +1,6 @@
 package io.whitespots.appsecplugin.listeners
 
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.TextEditor
@@ -12,7 +12,7 @@ import io.whitespots.appsecplugin.highlighting.FindingHighlightService
 class EditorListener(private val project: Project) : FileEditorManagerListener {
 
     companion object {
-        private val LOG = Logger.getInstance(EditorListener::class.java)
+        private val LOG = logger<EditorListener>()
     }
 
     override fun fileOpened(source: FileEditorManager, file: VirtualFile) {

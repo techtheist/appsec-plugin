@@ -15,24 +15,20 @@ import com.intellij.ui.AnimatedIcon
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.dsl.builder.*
+import com.intellij.ui.dsl.builder.Align
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.tree.TreeUtil
-import git4idea.repo.GitRepositoryManager
-import io.whitespots.appsecplugin.api.*
+import io.whitespots.appsecplugin.exceptions.ApiClientConfigurationException
+import io.whitespots.appsecplugin.exceptions.FindingsException
 import io.whitespots.appsecplugin.highlighting.FindingHighlightService
-import io.whitespots.appsecplugin.models.AssetType
 import io.whitespots.appsecplugin.models.Finding
-import io.whitespots.appsecplugin.models.Severity
-import io.whitespots.appsecplugin.models.TriageStatus
-import io.whitespots.appsecplugin.services.AppSecPluginSettings
 import io.whitespots.appsecplugin.services.FindingsRefreshListener
 import io.whitespots.appsecplugin.services.FindingsRefreshTopics
+import io.whitespots.appsecplugin.services.FindingsService
 import io.whitespots.appsecplugin.settings.AppSecPluginSettingsConfigurable
-import io.whitespots.appsecplugin.utils.GitUrlParser
-import io.whitespots.appsecplugin.utils.MarkdownConverter
 import io.whitespots.appsecplugin.utils.ThemeUtils
 import kotlinx.coroutines.*
 import java.awt.event.MouseAdapter
@@ -62,7 +58,9 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
     private val descriptionBrowser = JBCefBrowser().apply {
         loadHTML(getEmptyStateHtml())
     }
-    private val loadingIcon = JBLabel(AnimatedIcon.Default())
+    private val loadingIcon = JBLabel(AnimatedIcon.Default.INSTANCE).apply {
+        preferredSize = JBUI.size(14)
+    }
     private var refreshAction: AnAction? = null
     private var expandAllAction: AnAction? = null
     private var collapseAllAction: AnAction? = null
@@ -95,10 +93,10 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
         return panel {
             row {
                 cell(toolbar!!.component)
-                    .align(AlignX.FILL)
                 cell(loadingIcon)
-                    .align(AlignX.CENTER)
-                    .apply { visible(false) }
+                    .apply {
+                        visible(false)
+                    }
             }
             row {
                 cell(splitPane!!)
@@ -222,69 +220,16 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
         scope.launch {
             setLoadingIndicator(true)
             try {
-                setLoadingState("Looking for Git repository...")
-                val repoUrl = getProjectRepositoryUrl()
-                if (repoUrl == null) {
-                    setLoadingState("Could not find a Git repository with a remote URL in this project.")
-                    return@launch
+                val findingsService = FindingsService(project)
+                val findings = findingsService.refreshFindings { status ->
+                    setLoadingState(status)
                 }
-
-                setLoadingState("Parsing Git repository URL...")
-                val parsedUrl = GitUrlParser.parse(repoUrl)
-                if (parsedUrl == null) {
-                    setLoadingState("Could not parse Git repository URL: $repoUrl")
-                    return@launch
-                }
-
-                setLoadingState("Searching for asset: ${parsedUrl.domain}/${parsedUrl.path}...")
-                val assets = AssetApi.getAssets(
-                        AssetQueryParams(
-                                asset_type = AssetType.REPOSITORY.value,
-                                search = "${parsedUrl.domain} ${parsedUrl.path}"
-                        )
-                ).results
-
-                if (assets.isEmpty()) {
-                    setLoadingState("This repository is not registered as an asset in Whitespots.")
-                    return@launch
-                }
-
-                val productID = assets.first().product
-                LOG.info("Found matching asset for Product ID: $productID")
-
-                setLoadingState("Loading findings for Product ID: $productID...")
-                val settings = AppSecPluginSettings.instance.state
-
-                val enabledSeverities = settings.enabledSeverities.mapNotNull { severityName ->
-                    try {
-                        Severity.valueOf(severityName)
-                    } catch (e: IllegalArgumentException) {
-                        null
-                    }
-                }
-
-                val enabledTriageStatuses = settings.enabledTriageStatuses.mapNotNull { statusName ->
-                    try {
-                        TriageStatus.valueOf(statusName)
-                    } catch (e: IllegalArgumentException) {
-                        null
-                    }
-                }
-
-                val findings = FindingApi.getFindings(FindingsQueryParams(
-                        product = productID,
-                        severityIn = enabledSeverities.ifEmpty { null },
-                        triageStatusIn = enabledTriageStatuses.ifEmpty { null }
-                )).results.take(settings.maxFindings)
-
-                if (findings.isEmpty()) {
-                    setLoadingState("No findings found for this repository.")
-                    return@launch
-                }
-
                 updateTree(findings)
             } catch (e: ApiClientConfigurationException) {
                 setLoadingState("Plugin not configured. Go to Settings/Preferences > Tools > Whitespots AppSec.")
+                LOG.warn(e)
+            } catch (e: FindingsException) {
+                setLoadingState(e.message ?: "An error occurred while loading findings")
                 LOG.warn(e)
             } catch (e: Exception) {
                 setLoadingState("An error occurred: ${e.message}")
@@ -324,20 +269,6 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
         clearDescription()
     }
 
-    private fun getProjectRepositoryUrl(): String? {
-        val repositories = GitRepositoryManager.getInstance(project).repositories
-        if (repositories.isEmpty()) {
-            LOG.warn("No Git repositories found in the project.")
-            return null
-        }
-        val remoteUrl = repositories.firstNotNullOfOrNull { it.remotes.firstOrNull()?.firstUrl }
-        if (remoteUrl != null) {
-            LOG.info("Found repository URL: $remoteUrl")
-        } else {
-            LOG.warn("No remotes found for any repository in the project.")
-        }
-        return remoteUrl
-    }
 
     private fun setupTreeListeners() {
         tree.addTreeSelectionListener {
@@ -375,8 +306,7 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
     }
 
     private fun displayFindingDescription(finding: Finding) {
-        val htmlContent = MarkdownConverter.toStyledHtml(finding.description)
-        descriptionBrowser.loadHTML(htmlContent)
+        ThemeUtils.prepareMarkdownPage(descriptionBrowser, finding, project)
     }
 
     private fun clearDescription() {
@@ -392,8 +322,8 @@ class AppSecToolWindow(private val project: Project, private val parentDisposabl
 
     data class FileTreeNode(val filePath: String, val count: Int) : DefaultMutableTreeNode() {
         override fun toString(): String {
-            val fileName = filePath
-            return "$count - $fileName"
+            val fileName = filePath.substringAfterLast('/')
+            return "$fileName count: $count"
         }
     }
 
