@@ -11,18 +11,22 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.whitespots.appsecplugin.exceptions.ApiClientConfigurationException
 import io.whitespots.appsecplugin.services.AppSecPluginSettings
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 
 object ApiClient {
     private val LOG = logger<ApiClient>()
     private const val API_BASE_PATH = "/api/v1/"
 
+    @OptIn(ExperimentalSerializationApi::class)
     val client: HttpClient by lazy {
         HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(Json {
                     ignoreUnknownKeys = true
                     coerceInputValues = true
+                    encodeDefaults = true
+                    explicitNulls = true
                 })
             }
 

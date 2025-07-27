@@ -12,6 +12,7 @@ import com.intellij.ui.jcef.JBCefJSQuery
 import io.whitespots.appsecplugin.models.Finding
 import io.whitespots.appsecplugin.models.TriageStatus
 import io.whitespots.appsecplugin.services.AppSecPluginSettings
+import io.whitespots.appsecplugin.services.AutoValidatorService
 import io.whitespots.appsecplugin.services.FindingRejectionService
 import io.whitespots.appsecplugin.services.FindingsRefreshTopics
 import kotlinx.coroutines.*
@@ -309,7 +310,8 @@ object ThemeUtils {
         markdown.append("### Status: ${finding.triageStatus.name.lowercase().replaceFirstChar { it.uppercase() }}\n\n")
 
         if (finding.triageStatus != TriageStatus.REJECTED) {
-            markdown.append("[Reject this finding](reject-finding:${finding.id})\n\n")
+            markdown.append("[Reject this finding](reject-finding:${finding.id}) | ")
+            markdown.append("[Reject finding forever](reject-finding-forever:${finding.id})\n\n")
         }
 
         if (!finding.lineText.isNullOrBlank()) {
@@ -351,6 +353,12 @@ object ThemeUtils {
                         handleRejectFinding(project, finding)
                     }
                 }
+                query.startsWith("reject-finding-forever:") -> {
+                    val findingId = query.substringAfter("reject-finding-forever:").toLongOrNull()
+                    if (findingId != null && findingId == finding.id) {
+                        handleRejectFindingForever(project, finding)
+                    }
+                }
                 query.startsWith("open-external:") -> {
                     val url = query.substringAfter("open-external:")
                     try {
@@ -374,7 +382,7 @@ object ThemeUtils {
                 <script>
                     // Click handling
                     document.addEventListener('click', function(e) {
-                        if (e.target.tagName === 'A' && e.target.href.startsWith('reject-finding:')) {
+                        if (e.target.tagName === 'A' && (e.target.href.startsWith('reject-finding:') || e.target.href.startsWith('reject-finding-forever:'))) {
                             e.preventDefault();
                             ${jsQuery.inject("e.target.href")};
                         } else if (e.target.tagName === 'A' && e.target.hasAttribute('target') && e.target.getAttribute('target') === '_blank') {
@@ -421,6 +429,47 @@ object ThemeUtils {
                     Messages.showErrorDialog(
                         project,
                         "Failed to reject finding ${finding.id}: ${e.message}",
+                        "Rejection Failed"
+                    )
+                }
+            }
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun handleRejectFindingForever(project: Project, finding: Finding) {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                LOG.info("Starting reject finding forever process for finding ${finding.id}")
+                val autoValidatorService = AutoValidatorService.getInstance(project)
+                val ruleResult = autoValidatorService.rejectFindingForever(finding)
+
+                withContext(Dispatchers.Main) {
+                    if (ruleResult.isSuccess) {
+                        Messages.showInfoMessage(
+                            project,
+                            "Auto-validator rule has been created to reject similar findings forever.",
+                            "Finding Rejected Forever"
+                        )
+                    } else {
+                        val error = ruleResult.exceptionOrNull()
+                        Messages.showWarningDialog(
+                            project,
+                            "Failed to create auto-validator rule: ${error?.message ?: "Unknown error"}",
+                            "Error"
+                        )
+                    }
+
+                    project.messageBus.syncPublisher(FindingsRefreshTopics.REFRESH_TOPIC)
+                        .onRefreshRequested()
+                }
+
+            } catch (e: Exception) {
+                LOG.error("Failed to reject finding forever for finding ${finding.id}", e)
+                withContext(Dispatchers.Main) {
+                    Messages.showErrorDialog(
+                        project,
+                        "Failed to reject finding ${finding.id} forever: ${e.message}",
                         "Rejection Failed"
                     )
                 }
