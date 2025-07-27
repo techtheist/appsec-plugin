@@ -35,6 +35,7 @@ object FindingPopupManager {
     private fun createPopupContent(project: Project, finding: Finding): JComponent {
         val browser = JBCefBrowser()
 
+        ThemeUtils.configureBrowserForExternalLinks(browser)
         ThemeUtils.prepareMarkdownPage(browser, finding, project)
 
         return browser.component.apply {

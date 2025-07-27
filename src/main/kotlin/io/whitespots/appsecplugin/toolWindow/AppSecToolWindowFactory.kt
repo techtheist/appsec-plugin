@@ -13,7 +13,7 @@ class AppSecToolWindowFactory : ToolWindowFactory {
         val appSecToolWindow = AppSecToolWindow(project, toolWindow.disposable)
         val appSecContent = ContentFactory.getInstance().createContent(
             appSecToolWindow.getContent(),
-            "App Sec",
+            "Findings",
             false)
         val webViewContent = ContentFactory.getInstance().createContent(
             WebViewToolWindow(project).content,

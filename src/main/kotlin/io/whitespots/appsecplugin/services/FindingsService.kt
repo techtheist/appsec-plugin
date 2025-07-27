@@ -40,12 +40,11 @@ class FindingsService(private val project: Project) {
             throw FindingsException("This repository is not registered as an asset in Whitespots.")
         }
 
-        val productIds = assets.map { it.product }.distinct()
-        LOG.info("Found ${assets.size} assets across ${productIds.size} products: $productIds")
+        val assetValues = assets.map { it.value }.distinct()
+        LOG.info("Found ${assets.size} assets with values: $assetValues")
+        onStatusUpdate("Loading findings for ${assets.size} assets...")
 
-        onStatusUpdate("Loading findings for ${productIds.size} products...")
         val settings = AppSecPluginSettings.instance.state
-
         val enabledSeverities = settings.enabledSeverities.mapNotNull { severityName ->
             try {
                 Severity.valueOf(severityName)
@@ -53,7 +52,6 @@ class FindingsService(private val project: Project) {
                 null
             }
         }
-
         val enabledTriageStatuses = settings.enabledTriageStatuses.mapNotNull { statusName ->
             try {
                 TriageStatus.valueOf(statusName)
@@ -63,30 +61,27 @@ class FindingsService(private val project: Project) {
         }
 
         val allFindings = mutableListOf<Finding>()
+        LOG.info("Fetching findings for asset values: $assetValues")
+        onStatusUpdate("Loading findings for asset values: $assetValues...")
 
-        productIds.forEach { productId ->
-            LOG.info("Fetching findings for Product ID: $productId")
-            onStatusUpdate("Loading findings for Product ID: $productId...")
+        val productFindings = FindingApi.getAllFindings(
+            FindingsQueryParams(
+                severityIn = enabledSeverities.ifEmpty { null },
+                triageStatusIn = enabledTriageStatuses.ifEmpty { null },
+                assetsIn = mapOf("0" to assetValues)
+            ),
+            maxFindings = settings.maxFindings
+        )
 
-            val productFindings = FindingApi.getAllFindings(
-                FindingsQueryParams(
-                    product = productId,
-                    severityIn = enabledSeverities.ifEmpty { null },
-                    triageStatusIn = enabledTriageStatuses.ifEmpty { null }
-                ),
-                maxFindings = settings.maxFindings
-            )
+        LOG.info("Found ${productFindings.size} findings for asset values: $assetValues")
+        allFindings.addAll(productFindings)
 
-            LOG.info("Found ${productFindings.size} findings for Product ID: $productId")
-            allFindings.addAll(productFindings)
-
-            if (allFindings.size >= settings.maxFindings) {
-                LOG.info("Reached maximum findings limit of ${settings.maxFindings}")
-            }
+        if (allFindings.size >= settings.maxFindings) {
+            LOG.info("Reached maximum findings limit of ${settings.maxFindings}")
         }
 
         val finalFindings = allFindings.take(settings.maxFindings)
-        LOG.info("Total findings retrieved: ${finalFindings.size} from ${productIds.size} products")
+        LOG.info("Total findings retrieved: ${finalFindings.size} from ${assetValues.size} asset values")
 
         if (finalFindings.isEmpty()) {
             throw FindingsException("No findings found for this repository.")

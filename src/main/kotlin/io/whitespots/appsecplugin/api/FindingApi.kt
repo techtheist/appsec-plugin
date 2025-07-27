@@ -28,7 +28,7 @@ data class SetStatusRequest(
 
 data class FindingsQueryParams(
     val search: String? = null,
-    val product: Long?,
+    val product: Long? = null,
     val severityIn: List<Severity>? = null,
     val triageStatusIn: List<TriageStatus>? = null,
     val page: Int? = null,
@@ -69,7 +69,7 @@ object FindingApi {
                 }
             }
             LOG.info("Received response with status: ${response.status}")
-            LOG.info("Response body: ${response.body<PaginatedResponse<Finding>>()}")
+            LOG.debug("Response body: ${response.body<PaginatedResponse<Finding>>()}")
 
             if (!response.status.isSuccess()) {
                 LOG.warn("Error response body: ${response.bodyAsText()}")

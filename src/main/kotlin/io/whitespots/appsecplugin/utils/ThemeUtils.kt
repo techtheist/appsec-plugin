@@ -1,7 +1,9 @@
 package io.whitespots.appsecplugin.utils
 
+import com.intellij.ide.BrowserUtil
 import com.intellij.ide.ui.LafManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.jcef.JBCefBrowser
@@ -12,15 +14,50 @@ import io.whitespots.appsecplugin.models.TriageStatus
 import io.whitespots.appsecplugin.services.AppSecPluginSettings
 import io.whitespots.appsecplugin.services.FindingRejectionService
 import io.whitespots.appsecplugin.services.FindingsRefreshTopics
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import org.cef.browser.CefBrowser
+import org.cef.browser.CefFrame
+import org.cef.handler.CefRequestHandlerAdapter
+import org.cef.network.CefRequest
 
 object ThemeUtils {
+    private val LOG = logger<ThemeUtils>()
+
     fun isDarkTheme(): Boolean {
         return LafManager.getInstance().currentUIThemeLookAndFeel.isDark
+    }
+
+    fun configureBrowserForExternalLinks(browser: JBCefBrowser) {
+        val cefBrowser = browser.cefBrowser
+        val client = cefBrowser.client
+
+        client.addRequestHandler(object : CefRequestHandlerAdapter() {
+            override fun onBeforeBrowse(
+                browser: CefBrowser,
+                frame: CefFrame,
+                request: CefRequest,
+                userGesture: Boolean,
+                isRedirect: Boolean
+            ): Boolean {
+                val url = request.url
+
+                if (url.startsWith("data:") || url.startsWith("about:")) {
+                    return false
+                }
+
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    try {
+                        BrowserUtil.browse(url)
+                        LOG.info("Opened external URL in system browser: $url")
+                    } catch (e: Exception) {
+                        LOG.warn("Failed to open URL in system browser: $url", e)
+                    }
+                    return true
+                }
+
+                return false
+            }
+        })
     }
 
     fun getIntellijThemeCSS(): String {
@@ -80,10 +117,8 @@ object ThemeUtils {
             }
             a {
                 color: #589DF6;
-                text-decoration: none;
-            }
-            a:hover {
                 text-decoration: underline;
+                cursor: pointer;
             }
             blockquote {
                 border-left: 4px solid #CC7832;
@@ -184,10 +219,8 @@ object ThemeUtils {
             }
             a {
                 color: #0366D6;
-                text-decoration: none;
-            }
-            a:hover {
                 text-decoration: underline;
+                cursor: pointer;
             }
             blockquote {
                 border-left: 4px solid #DFE2E5;
@@ -269,7 +302,7 @@ object ThemeUtils {
             "info" -> "#0088ff"
             else -> "#888888"
         }
-        val url = "<a href='${settings.apiUrl}/products/${finding.product}/findings/${finding.id}' target='_blank'>${finding.id}</a>"
+        val url = "<a href='${settings.apiUrl.removeSuffix("/")}/products/${finding.product}/findings/${finding.id}' target='_blank'>${finding.id}</a>"
 
         markdown.append("### ${url}: <span style='color: $severityColor; font-weight: bold;'>${finding.severity.name}</span> - ${finding.name}\n\n")
 
@@ -307,12 +340,25 @@ object ThemeUtils {
         finding: Finding,
         project: Project
     ) {
+        configureBrowserForExternalLinks(browser)
+
         val jsQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
         jsQuery.addHandler { query ->
-            if (query.startsWith("reject-finding:")) {
-                val findingId = query.substringAfter("reject-finding:").toLongOrNull()
-                if (findingId != null && findingId == finding.id) {
-                    handleRejectFinding(project, finding)
+            when {
+                query.startsWith("reject-finding:") -> {
+                    val findingId = query.substringAfter("reject-finding:").toLongOrNull()
+                    if (findingId != null && findingId == finding.id) {
+                        handleRejectFinding(project, finding)
+                    }
+                }
+                query.startsWith("open-external:") -> {
+                    val url = query.substringAfter("open-external:")
+                    try {
+                        BrowserUtil.browse(url)
+                        LOG.info("Opened external URL in system browser via JS: $url")
+                    } catch (e: Exception) {
+                        LOG.warn("Failed to open URL in system browser via JS: $url", e)
+                    }
                 }
             }
             null
@@ -326,10 +372,14 @@ object ThemeUtils {
             "</body>",
             """
                 <script>
+                    // Click handling
                     document.addEventListener('click', function(e) {
                         if (e.target.tagName === 'A' && e.target.href.startsWith('reject-finding:')) {
                             e.preventDefault();
                             ${jsQuery.inject("e.target.href")};
+                        } else if (e.target.tagName === 'A' && e.target.hasAttribute('target') && e.target.getAttribute('target') === '_blank') {
+                            e.preventDefault();
+                            ${jsQuery.inject("'open-external:' + e.target.href")};
                         }
                     });
                 </script>

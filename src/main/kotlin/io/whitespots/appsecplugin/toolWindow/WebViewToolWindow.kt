@@ -6,6 +6,7 @@ import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.util.ui.JBUI
+import io.whitespots.appsecplugin.utils.ThemeUtils
 import java.net.URL
 import java.util.*
 import java.util.jar.JarFile
@@ -24,6 +25,7 @@ class WebViewToolWindow(private val project: Project) {
     }
 
     init {
+        ThemeUtils.configureBrowserForExternalLinks(browser)
         setupJSBridge()
         loadWebView()
     }
@@ -110,8 +112,9 @@ class WebViewToolWindow(private val project: Project) {
     }
 
     private fun scanJarResources(url: URL, basePath: String, resources: MutableMap<String, MutableList<String>>) {
-        val jarPath = url.path.substringBefore("!")
-        val jarFile = JarFile(jarPath.removePrefix("file:"))
+        val jarPath = url.toString().substringBefore("!").removePrefix("jar:file:")
+        val decodedJarPath = java.net.URLDecoder.decode(jarPath, "UTF-8")
+        val jarFile = JarFile(decodedJarPath)
 
         jarFile.entries().asSequence()
             .filter { !it.isDirectory && it.name.startsWith(basePath.removePrefix("/")) }

@@ -20,8 +20,8 @@ class FindingHighlightGutterIconRenderer(private val finding: Finding) : GutterI
         return when (finding.severity) {
             Severity.CRITICAL -> AllIcons.General.Error
             Severity.HIGH -> AllIcons.General.Warning
-            Severity.MEDIUM -> AllIcons.General.Information
-            Severity.LOW -> AllIcons.General.Information
+            Severity.MEDIUM -> AllIcons.General.Warning
+            Severity.LOW -> AllIcons.General.Warning
             Severity.INFO -> AllIcons.General.Information
         }
     }

@@ -54,6 +54,7 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
     private val tree = Tree(treeModel)
     private val descriptionBrowser = JBCefBrowser().apply {
         loadHTML(getEmptyStateHtml())
+        ThemeUtils.configureBrowserForExternalLinks(this)
     }
     private val loadingIcon = JBLabel(AnimatedIcon.Default.INSTANCE).apply {
         preferredSize = JBUI.size(14)
