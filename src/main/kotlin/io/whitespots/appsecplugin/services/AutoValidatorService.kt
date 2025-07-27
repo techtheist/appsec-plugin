@@ -6,6 +6,7 @@ import com.intellij.openapi.project.Project
 import io.whitespots.appsecplugin.api.AutoValidatorApi
 import io.whitespots.appsecplugin.api.AutoValidatorInstruction
 import io.whitespots.appsecplugin.api.AutoValidatorRuleRequest
+import io.whitespots.appsecplugin.api.QueryParamsAutovalidatorRule
 import io.whitespots.appsecplugin.models.Finding
 import io.whitespots.appsecplugin.utils.GitUtils
 
@@ -19,8 +20,42 @@ class AutoValidatorService(private val project: Project) {
         }
     }
 
-    suspend fun rejectFindingForever(finding: Finding): Result<Unit> {
+    suspend fun rejectFindingForever(finding: Finding): Result<RuleCreationResult> {
         return try {
+            LOG.info("Starting reject finding forever process for finding ${finding.id}")
+
+            val queryParams = QueryParamsAutovalidatorRule(
+                actionChoices = 0,
+                search = "\"${finding.name}\" \"${finding.filePath ?: ""}\""
+            )
+
+            val rulesResult = AutoValidatorApi.getRules(queryParams)
+
+            if (rulesResult.isFailure) {
+                LOG.warn("Failed to check existing validator rules: ${rulesResult.exceptionOrNull()?.message}")
+            } else {
+                val rules = rulesResult.getOrNull()
+                if (rules != null) {
+                    val filtered = rules.results.filter { rule ->
+                        val nameMatch = rule.instructions.any { 
+                            it.field == "Finding__name" && it.value == finding.name 
+                        }
+                        val filePathMatch = finding.filePath?.let { filePath ->
+                            rule.instructions.any { 
+                                it.field == "Finding__file_path" && it.value == filePath 
+                            }
+                        } ?: true
+
+                        nameMatch && filePathMatch
+                    }
+
+                    if (filtered.isNotEmpty()) {
+                        LOG.info("Found ${filtered.size} existing rule(s) for this finding")
+                        return Result.success(RuleCreationResult.ExistingRulesFound(filtered.size, queryParams))
+                    }
+                }
+            }
+
             LOG.info("Creating auto-validator rule to reject finding ${finding.id} forever")
 
             val email = GitUtils.getGitEmail(project)
@@ -56,22 +91,28 @@ class AutoValidatorService(private val project: Project) {
                 tags = tags,
                 groups = emptyList(),
                 allowAllProducts = true,
-                issuesAutoCreateOnVerify = false,
+                issuesAutoCreateOnVerify = null,
                 affectedProductsCluster = null,
                 readOnly = false
             )
 
-            val success = AutoValidatorApi.createRule(rule)
+            val createResult = AutoValidatorApi.createRule(rule)
 
-            if (success) {
-                LOG.info("Successfully created auto-validator rule for finding ${finding.id}")
-                Result.success(Unit)
+            if (createResult.isSuccess) {
+                val ruleId = createResult.getOrThrow()
+                LOG.info("Successfully created auto-validator rule with ID: $ruleId for finding ${finding.id}")
+                Result.success(RuleCreationResult.RuleCreated(ruleId))
             } else {
-                throw Exception("Failed to create auto-validator rule")
+                throw createResult.exceptionOrNull() ?: Exception("Failed to create auto-validator rule")
             }
         } catch (e: Exception) {
             LOG.error("Failed to create auto-validator rule for finding ${finding.id}", e)
             Result.failure(e)
         }
+    }
+
+    sealed class RuleCreationResult {
+        data class RuleCreated(val ruleId: Long) : RuleCreationResult()
+        data class ExistingRulesFound(val count: Int, val queryParams: io.whitespots.appsecplugin.api.QueryParamsAutovalidatorRule) : RuleCreationResult()
     }
 }

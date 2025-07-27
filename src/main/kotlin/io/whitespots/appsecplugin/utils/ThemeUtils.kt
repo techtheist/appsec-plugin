@@ -20,6 +20,7 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefRequestHandlerAdapter
 import org.cef.network.CefRequest
+import java.net.URLEncoder
 
 object ThemeUtils {
     private val LOG = logger<ThemeUtils>()
@@ -446,11 +447,58 @@ object ThemeUtils {
 
                 withContext(Dispatchers.Main) {
                     if (ruleResult.isSuccess) {
-                        Messages.showInfoMessage(
-                            project,
-                            "Auto-validator rule has been created to reject similar findings forever.",
-                            "Finding Rejected Forever"
-                        )
+                        when (val result = ruleResult.getOrThrow()) {
+                            is AutoValidatorService.RuleCreationResult.RuleCreated -> {
+                                val settings = service<AppSecPluginSettings>().state
+                                val ruleUrl = "${settings.apiUrl.removeSuffix("/")}/autovalidator/rule/${result.ruleId}"
+                                val message = "Auto-validator rule has been created to reject similar findings forever.\n\nView created rule: $ruleUrl"
+
+                                val choice = Messages.showDialog(
+                                    project,
+                                    message,
+                                    "Finding Rejected Forever",
+                                    arrayOf("View Rule", "OK"),
+                                    0,
+                                    Messages.getInformationIcon()
+                                )
+
+                                if (choice == 0) { // View Rule clicked
+                                    try {
+                                        BrowserUtil.browse(ruleUrl)
+                                        LOG.info("Opened rule URL in system browser: $ruleUrl")
+                                    } catch (e: Exception) {
+                                        LOG.warn("Failed to open rule URL in system browser: $ruleUrl", e)
+                                    }
+                                }
+                            }
+                            is AutoValidatorService.RuleCreationResult.ExistingRulesFound -> {
+                                val settings = service<AppSecPluginSettings>().state
+                                val actionChoicesParam = URLEncoder.encode("${result.queryParams.actionChoices}", "UTF-8")
+                                val searchParam = URLEncoder.encode(result.queryParams.search, "UTF-8")
+                                val rulesUrl = "${settings.apiUrl.removeSuffix("/")}/autovalidator?action_choices=$actionChoicesParam&search=$searchParam"
+
+                                val message = "Found ${result.count} rule${if (result.count == 1) "" else "s"} for this finding.\n\nExisting rules already handle similar findings."
+
+                                val choice = Messages.showDialog(
+                                    project,
+                                    message,
+                                    "Existing Rules Found",
+                                    arrayOf("View Rules", "OK"),
+                                    0,
+                                    Messages.getWarningIcon()
+                                )
+
+                                if (choice == 0) {
+                                    try {
+                                        BrowserUtil.browse(rulesUrl)
+                                        LOG.info("Opened rules URL in system browser: $rulesUrl")
+                                    } catch (e: Exception) {
+                                        LOG.warn("Failed to open rules URL in system browser: $rulesUrl", e)
+                                    }
+                                }
+                                return@withContext
+                            }
+                        }
                     } else {
                         val error = ruleResult.exceptionOrNull()
                         Messages.showWarningDialog(
