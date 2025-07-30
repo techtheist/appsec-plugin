@@ -36,16 +36,16 @@ dependencies {
     testImplementation(libs.opentest4j)
 
     // Ktor client for networking
-    implementation("io.ktor:ktor-client-core:2.3.12") {
+    implementation("io.ktor:ktor-client-core:3.2.3") {
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
     }
-    implementation("io.ktor:ktor-client-cio:2.3.12") {
+    implementation("io.ktor:ktor-client-cio:3.2.3") {
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
     }
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.12") {
+    implementation("io.ktor:ktor-client-content-negotiation:3.2.3") {
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
     }
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12") {
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.2.3") {
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
     }
 
