@@ -160,26 +160,6 @@ tasks {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
 
-    buildPlugin {
-        dependsOn(prepareSandbox)
-    }
-
-    prepareSandbox {
-        doLast {
-            val libDir = file("${project.projectDir}/build/idea-sandbox/plugins/${project.name}/lib")
-            libDir.mkdirs()
-
-            configurations.runtimeClasspath.get().files.forEach { file ->
-                if (file.name.contains("flexmark") || 
-                    file.name.contains("ktor") || 
-                    file.name.contains("kotlinx-serialization")) {
-                    println("Copying dependency: ${file.name}")
-                    file.copyTo(File(libDir, file.name), overwrite = true)
-                }
-            }
-        }
-    }
-
     publishPlugin {
         dependsOn(patchChangelog)
     }
