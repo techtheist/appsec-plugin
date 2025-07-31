@@ -28,11 +28,4 @@
         <postStartupActivity implementation="io.whitespots.appsecplugin.startup.PluginStartupActivity"/>
         <appStarter implementation="io.whitespots.appsecplugin.protocol.WhitespotsApplicationStarter"/>
     </extensions>
-
-    <actions>
-        <action id="AppSecHighlightDebug" class="io.whitespots.appsecplugin.debug.HighlightDebugAction"
-                text="Test AppSec Highlighting">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-        </action>
-    </actions>
 </idea-plugin>

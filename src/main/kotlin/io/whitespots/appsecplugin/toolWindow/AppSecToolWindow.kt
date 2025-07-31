@@ -110,6 +110,11 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
                 refreshFindings()
             }
 
+            override fun update(e: AnActionEvent) {
+                super.update(e)
+                e.presentation.isEnabled = projectFindingsService.findingsState.value !is FindingsState.Loading
+            }
+
             override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
         }
 
@@ -196,7 +201,7 @@ class AppSecToolWindow(private val project: Project, parentDisposable: Disposabl
     private fun setLoadingIndicator(visible: Boolean) {
         ToolWindowManager.getInstance(project).invokeLater {
             loadingIcon.isVisible = visible
-            refreshAction?.templatePresentation?.isEnabled = !visible
+            // Don't directly modify template presentation - let the action's update method handle it
             toolbar?.updateActionsAsync()
         }
     }
