@@ -9,7 +9,7 @@ plugins {
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
     alias(libs.plugins.kover) // Gradle Kover Plugin
-    kotlin("plugin.serialization") version "2.1.20"
+    kotlin("plugin.serialization") version "2.1.0"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -57,11 +57,13 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
     }
 
-    // Kotlinx Serialization runtime
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
-    // Flexmark for Markdown to HTML conversion
-    implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
+    implementation("com.vladsch.flexmark:flexmark-all:0.64.8") {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+    }
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
@@ -156,6 +158,26 @@ kover {
 tasks {
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
+    }
+
+    buildPlugin {
+        dependsOn(prepareSandbox)
+    }
+
+    prepareSandbox {
+        doLast {
+            val libDir = file("${project.projectDir}/build/idea-sandbox/plugins/${project.name}/lib")
+            libDir.mkdirs()
+
+            configurations.runtimeClasspath.get().files.forEach { file ->
+                if (file.name.contains("flexmark") || 
+                    file.name.contains("ktor") || 
+                    file.name.contains("kotlinx-serialization")) {
+                    println("Copying dependency: ${file.name}")
+                    file.copyTo(File(libDir, file.name), overwrite = true)
+                }
+            }
+        }
     }
 
     publishPlugin {
