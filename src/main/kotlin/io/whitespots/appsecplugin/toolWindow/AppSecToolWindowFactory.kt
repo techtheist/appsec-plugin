@@ -7,6 +7,8 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 
 class AppSecToolWindowFactory : ToolWindowFactory {
+    private val WEBVIEW_ENABLED = false
+
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         toolWindow.setDefaultContentUiType(ToolWindowContentUiType.TABBED)
 
@@ -14,13 +16,16 @@ class AppSecToolWindowFactory : ToolWindowFactory {
         val appSecContent = ContentFactory.getInstance().createContent(
             appSecToolWindow.getContent(),
             "Findings",
-            false)
-        val webViewContent = ContentFactory.getInstance().createContent(
-            WebViewToolWindow(project).content,
-            "Chat",
             false
         )
         toolWindow.contentManager.addContent(appSecContent)
-        toolWindow.contentManager.addContent(webViewContent)
+        if (WEBVIEW_ENABLED) {
+            val webViewContent = ContentFactory.getInstance().createContent(
+                WebViewToolWindow(project).content,
+                "Chat",
+                false
+            )
+            toolWindow.contentManager.addContent(webViewContent)
+        }
     }
 }

@@ -9,8 +9,8 @@ import javax.swing.JPasswordField
 import javax.swing.JTextField
 
 class LoginDialog(project: Project?) : DialogWrapper(project) {
-    private val usernameField = JTextField(20)
-    private val passwordField = JPasswordField(20)
+    private val usernameField = JTextField(30)
+    private val passwordField = JPasswordField(30)
 
     var username: String
         get() = usernameField.text.trim()

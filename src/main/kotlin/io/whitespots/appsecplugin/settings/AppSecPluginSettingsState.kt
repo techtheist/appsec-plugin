@@ -1,7 +1,7 @@
 package io.whitespots.appsecplugin.settings
 
 data class AppSecPluginSettingsState(
-    var apiUrl: String = "https://portal-dev.whitespots.io/",
+    var apiUrl: String = "",
     var apiToken: String = "",
 
     var highlightFindings: Boolean = true,

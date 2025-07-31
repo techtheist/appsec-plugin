@@ -381,7 +381,6 @@ object ThemeUtils {
             "</body>",
             """
                 <script>
-                    // Click handling
                     document.addEventListener('click', function(e) {
                         if (e.target.tagName === 'A' && (e.target.href.startsWith('reject-finding:') || e.target.href.startsWith('reject-finding-forever:'))) {
                             e.preventDefault();
@@ -462,7 +461,7 @@ object ThemeUtils {
                                     Messages.getInformationIcon()
                                 )
 
-                                if (choice == 0) { // View Rule clicked
+                                if (choice == 0) {
                                     try {
                                         BrowserUtil.browse(ruleUrl)
                                         LOG.info("Opened rule URL in system browser: $ruleUrl")

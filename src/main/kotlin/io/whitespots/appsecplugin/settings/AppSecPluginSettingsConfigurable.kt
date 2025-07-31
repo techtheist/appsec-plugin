@@ -134,7 +134,7 @@ class AppSecPluginSettingsConfigurable : BoundConfigurable("Whitespots AppSec") 
                 row {
                     comment("Select which severity levels should be included when displaying findings")
                 }
-                for (severity in Severity.entries.reversed()) { // Show from Critical to Info
+                for (severity in Severity.entries.reversed()) {
                     row {
                         val severityName = severity.name
                         val displayName = when (severity) {
@@ -190,7 +190,7 @@ class AppSecPluginSettingsConfigurable : BoundConfigurable("Whitespots AppSec") 
 
                         ApplicationManager.getApplication().invokeLater {
                             settings.apiToken = token
-                            apiTokenField?.let { field ->
+                            apiTokenField?.let {
                                 settings.apiToken = token
                             }
                             Messages.showInfoMessage(
