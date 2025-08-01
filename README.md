@@ -1,25 +1,37 @@
 # whitespots-application-security-portal
 
+<!-- Plugin description -->
 ![Build](https://github.com/Whitespots-OU/jetbrains-portal-extension/workflows/Build/badge.svg)
 [![Version](https://img.shields.io/jetbrains/plugin/v/28070-whitespots-application-security-portal.svg)](https://plugins.jetbrains.com/plugin/28070-whitespots-application-security-portal)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/28070-whitespots-application-security-portal.svg)](https://plugins.jetbrains.com/plugin/28070-whitespots-application-security-portal)
 
-## Template ToDo list
-- [x] Create a new [IntelliJ Platform Plugin Template][template] project.
-- [x] Get familiar with the [template documentation][template].
-- [x] Adjust the [pluginGroup](./gradle.properties) and [pluginName](./gradle.properties), as well as the [id](./src/main/resources/META-INF/plugin.xml) and [sources package](./src/main/kotlin).
-- [x] Adjust the plugin description in `README` (see [Tips][docs:plugin-description])
-- [x] Review the [Legal Agreements](https://plugins.jetbrains.com/docs/marketplace/legal-agreements.html?from=IJPluginTemplate).
-- [x] [Publish a plugin manually](https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate) for the first time.
-- [x] Set the `MARKETPLACE_ID` in the above README badges. You can obtain it once the plugin is published to JetBrains Marketplace.
-- [x] Set the [Plugin Signing](https://plugins.jetbrains.com/docs/intellij/plugin-signing.html?from=IJPluginTemplate) related [secrets](https://github.com/JetBrains/intellij-platform-plugin-template#environment-variables).
-- [x] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html?from=IJPluginTemplate).
-- [x] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
+**Description**: A Intellij platform plugin to integrate with the [Whitespots Application Security Portal](https://whitespots.io/) and display vulnerabilities related to the current repository.
 
-<!-- Plugin description -->
-A Intellij platform plugin to integrate with the Whitespots Application Security Portal and display vulnerabilities related to the current repository.
+---
 
-## Installation
+## 🛡️ Overview
+
+The **Whitespots Application Security Portal Plugin** brings vulnerability insights directly into your IntelliJ-based workspace. It connects to your instance of the **Whitespots Application Security Portal** and retrieves detailed information about security issues discovered in your current project repository.
+
+This tool is ideal for developers who want to:
+
+- See real-time vulnerability data in their code editor
+- Quickly identify and fix security issues
+- Stay in sync with the Portal’s scan results
+
+---
+
+## 🚀 Features
+
+- 🔗 Connect your local project to a Whitespots Portal instance
+- 📂 Automatically detect the current repository and fetch related vulnerabilities
+- 🛠️ View issue descriptions, severity, file paths, and remediation tips
+- 🧭 Navigate from the vulnerability list to affected code locations
+- ♻️ Refresh data with a single click
+
+---
+
+## 🔌 Installation
 
 - Using the IDE built-in plugin system:
 
@@ -37,6 +49,27 @@ A Intellij platform plugin to integrate with the Whitespots Application Security
 
   Download the [latest release](https://github.com/Whitespots-OU/jetbrains-portal-extension/releases/latest) and install it manually using
   <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+
+---
+
+## 🛠️ Usage
+
+1. Open a project folder in **Jetbrains IDE** (Check out compatibility in IDE on the marketplace page)
+2. Click on the **Whitespots Security** icon in the sidebar to open the plugin panel
+3. In the panel, click the **Settings** (⚙️) button
+4. Enter the following details in the settings form:
+    - **External Portal URL** – the External URL of your Whitespots Application Security Portal instance
+    - **Auth API Token** – authorization API token from the Portal
+5. Or, you can get the API token by using the **Login** button after setting and saving **External Portal URL** field
+
+Once configured, the extension will automatically retrieve and display vulnerabilities related to the current repository.
+
+---
+
+## 📄 License
+
+MIT License  
+© Whitespots
 
 <!-- Plugin description end -->
 ---
