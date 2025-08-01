@@ -1,4 +1,4 @@
-# whitespots-application-security-portal
+# Whitespots Application Security Portal Jetbrains Plugin
 
 <!-- Plugin description -->
 ![Build](https://github.com/Whitespots-OU/jetbrains-portal-extension/workflows/Build/badge.svg)
@@ -66,9 +66,17 @@ Once configured, the extension will automatically retrieve and display vulnerabi
 
 ---
 
+## 🧪 Development & Contributions
+
+This extension is developed and maintained by **Whitespots**.
+
+For feature requests, feedback, or support inquiries, please contact us at [sales@whitespots.io](mailto:sales@whitespots.io).
+
+---
+
 ## 📄 License
 
-MIT License  
+MIT License
 © Whitespots
 
 <!-- Plugin description end -->
