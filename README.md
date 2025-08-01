@@ -1,6 +1,6 @@
 # whitespots-application-security-portal
 
-![Build](https://github.com/Whitespots-OU/whitespots-application-security-portal/workflows/Build/badge.svg)
+![Build](https://github.com/Whitespots-OU/jetbrains-portal-extension/workflows/Build/badge.svg)
 [![Version](https://img.shields.io/jetbrains/plugin/v/28070-whitespots-application-security-portal.svg)](https://plugins.jetbrains.com/plugin/28070-whitespots-application-security-portal)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/28070-whitespots-application-security-portal.svg)](https://plugins.jetbrains.com/plugin/28070-whitespots-application-security-portal)
 
