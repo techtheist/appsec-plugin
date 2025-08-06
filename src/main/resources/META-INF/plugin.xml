@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>io.whitespots.appsecplugin</id>
-    <name>AppSec</name>
+    <name>Whitespots Application Security Portal</name>
     <vendor url="https://whitespots.io/">Whitespots</vendor>
 
     <description><![CDATA[

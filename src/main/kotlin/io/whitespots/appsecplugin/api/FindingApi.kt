@@ -93,7 +93,6 @@ object FindingApi {
 
         while (hasMorePages && allFindings.size < maxFindings) {
             val pageParams = params.copy(page = currentPage)
-            LOG.debug("Fetching page $currentPage")
 
             val response = getFindings(pageParams)
             allFindings.addAll(response.results)
@@ -119,7 +118,6 @@ object FindingApi {
 
     suspend fun setStatus(findingId: Long, status: TriageStatus, comment: String? = null): Boolean {
         val endpointPath = ApiClient.path("findings/$findingId")
-        LOG.info("Setting status for finding $findingId to $status")
 
         try {
             val requestBody = SetStatusRequest(
@@ -142,7 +140,6 @@ object FindingApi {
 
     suspend fun addTag(findingId: Long, tag: TagRequest): Boolean {
         val endpointPath = ApiClient.path("findings/$findingId/tags/add")
-        LOG.info("Adding tag '${tag.name}' to finding $findingId using endpoint: $endpointPath")
 
         try {
             val response = httpClient.post(endpointPath) {

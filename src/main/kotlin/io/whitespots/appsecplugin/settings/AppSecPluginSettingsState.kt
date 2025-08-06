@@ -7,6 +7,6 @@ data class AppSecPluginSettingsState(
     var highlightFindings: Boolean = true,
 
     var maxFindings: Int = 100,
-    var enabledTriageStatuses: MutableSet<String> = mutableSetOf("RESOLVED", "VERIFIED", "ASSIGNED", "REJECTED", "TEMPORARILY"),
+    var enabledTriageStatuses: MutableSet<String> = mutableSetOf("VERIFIED", "ASSIGNED"),
     var enabledSeverities: MutableSet<String> = mutableSetOf("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO")
 )

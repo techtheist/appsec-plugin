@@ -79,11 +79,11 @@ object ThemeUtils {
                 font-size: 13px;
                 text-wrap: pretty;
                 overflow-wrap: break-word;
-                margin: 16px;
+                margin: 0px 16px 16px 16px;
                 padding: 0;
             }
             h1, h2, h3, h4, h5, h6 {
-                margin-top: 24px;
+                margin-top: 16px;
                 margin-bottom: 16px;
                 font-weight: 600;
             }
@@ -94,7 +94,7 @@ object ThemeUtils {
             h5 { font-size: 0.83em; }
             h6 { font-size: 0.75em; }
             p {
-                margin: 16px 0;
+                margin: 8px 0;
             }
             code {
                 background-color: #3C3F41;
@@ -121,6 +121,54 @@ object ThemeUtils {
                 color: #589DF6;
                 text-decoration: underline;
                 cursor: pointer;
+            }
+            a img {
+                display: inline-block;
+                vertical-align: middle;
+                border: none;
+                text-decoration: none;
+                margin: 2px;
+                border-radius: 4px;
+                transition: opacity 0.2s ease;
+            }
+            a img:hover {
+                opacity: 0.8;
+            }
+            .tooltip {
+                position: relative;
+                display: inline-block;
+            }
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 100%;
+                background-color: #3C3F41;
+                color: #BCBEC4;
+                text-align: center;
+                border-radius: 6px;
+                padding: 8px;
+                position: absolute;
+                z-index: 1000;
+                bottom: 125%;
+                left: 0%;
+                margin-left: -8px;
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-size: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            }
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
+            .tooltip .tooltiptext::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: #3C3F41 transparent transparent transparent;
             }
             blockquote {
                 border-left: 4px solid #CC7832;
@@ -180,11 +228,11 @@ object ThemeUtils {
                 font-size: 13px;
                 text-wrap: pretty;
                 overflow-wrap: break-word;
-                margin: 16px;
+                margin: 0px 16px 16px 16px;
                 padding: 0;
             }
             h1, h2, h3, h4, h5, h6 {
-                margin-top: 24px;
+                margin-top: 16px;
                 margin-bottom: 16px;
                 font-weight: 600;
             }
@@ -195,7 +243,7 @@ object ThemeUtils {
             h5 { font-size: 0.83em; }
             h6 { font-size: 0.75em; }
             p {
-                margin: 16px 0;
+                margin: 8px 0;
             }
             code {
                 background-color: #F5F5F5;
@@ -223,6 +271,55 @@ object ThemeUtils {
                 color: #0366D6;
                 text-decoration: underline;
                 cursor: pointer;
+            }
+            a img {
+                display: inline-block;
+                vertical-align: middle;
+                border: none;
+                text-decoration: none;
+                margin: 2px;
+                border-radius: 4px;
+                transition: opacity 0.2s ease;
+            }
+            a img:hover {
+                opacity: 0.8;
+            }
+            .tooltip {
+                position: relative;
+                display: inline-block;
+            }
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 100%;
+                background-color: #FFFFFF;
+                color: #000000;
+                text-align: center;
+                border-radius: 6px;
+                padding: 8px;
+                position: absolute;
+                z-index: 1000;
+                bottom: 125%;
+                left: 0%;
+                margin-left: -8px;
+                opacity: 0;
+                transition: opacity 0.3s;
+                border: 1px solid #E1E4E8;
+                font-size: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
+            .tooltip .tooltiptext::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: #FFFFFF transparent transparent transparent;
             }
             blockquote {
                 border-left: 4px solid #DFE2E5;
@@ -310,9 +407,18 @@ object ThemeUtils {
 
         markdown.append("### Status: ${finding.triageStatus.name.lowercase().replaceFirstChar { it.uppercase() }}\n\n")
 
+        val buttons = mutableListOf<String>()
+
         if (finding.triageStatus != TriageStatus.REJECTED) {
-            markdown.append("[Reject this finding](reject-finding:${finding.id}) | ")
-            markdown.append("[Reject finding forever](reject-finding-forever:${finding.id})\n\n")
+            buttons.add(SvgButtonUtils.createRejectButton(finding.id))
+        }
+
+        if (finding.filePath != null) {
+            buttons.add(SvgButtonUtils.createRejectForeverButton(finding.id))
+        }
+
+        if (buttons.isNotEmpty()) {
+            markdown.append("<div style=\"margin: 10px 0;\">${buttons.joinToString("&nbsp;&nbsp;")}</div>\n\n")
         }
 
         if (!finding.lineText.isNullOrBlank()) {
@@ -350,12 +456,14 @@ object ThemeUtils {
             when {
                 query.startsWith("reject-finding:") -> {
                     val findingId = query.substringAfter("reject-finding:").toLongOrNull()
+                    LOG.info("Processing reject finding: $findingId for finding: ${finding.id}")
                     if (findingId != null && findingId == finding.id) {
                         handleRejectFinding(project, finding)
                     }
                 }
                 query.startsWith("reject-finding-forever:") -> {
                     val findingId = query.substringAfter("reject-finding-forever:").toLongOrNull()
+                    LOG.info("Processing reject finding forever: $findingId for finding: ${finding.id}")
                     if (findingId != null && findingId == finding.id) {
                         handleRejectFindingForever(project, finding)
                     }
@@ -382,12 +490,20 @@ object ThemeUtils {
             """
                 <script>
                     document.addEventListener('click', function(e) {
-                        if (e.target.tagName === 'A' && (e.target.href.startsWith('reject-finding:') || e.target.href.startsWith('reject-finding-forever:'))) {
-                            e.preventDefault();
-                            ${jsQuery.inject("e.target.href")};
-                        } else if (e.target.tagName === 'A' && e.target.hasAttribute('target') && e.target.getAttribute('target') === '_blank') {
-                            e.preventDefault();
-                            ${jsQuery.inject("'open-external:' + e.target.href")};
+                        var anchor = e.target.closest('a');
+
+                        if (anchor) {
+                            if (anchor.href.startsWith('reject-finding:') || anchor.href.startsWith('reject-finding-forever:')) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                ${jsQuery.inject("anchor.href")};
+                                return false;
+                            } else if (anchor.hasAttribute('target') && anchor.getAttribute('target') === '_blank') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                ${jsQuery.inject("'open-external:' + anchor.href")};
+                                return false;
+                            }
                         }
                     });
                 </script>

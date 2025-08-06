@@ -54,8 +54,8 @@ This tool is ideal for developers who want to:
 
 ## 🛠️ Usage
 
-1. Open a project folder in **Jetbrains IDE** (Check out compatibility in IDE on the marketplace page)
-2. Click on the **Whitespots Security** icon in the sidebar to open the plugin panel
+1. Open a project folder in **Jetbrains IDE** (Check out compatibility in IDE or on the marketplace page)
+2. Click on the **Whitespots Security** icon (🛡) in the sidebar to open the plugin panel
 3. In the panel, click the **Settings** (⚙️) button
 4. Enter the following details in the settings form:
     - **External Portal URL** – the External URL of your Whitespots Application Security Portal instance
