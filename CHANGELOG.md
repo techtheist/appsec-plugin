@@ -17,4 +17,6 @@
 - Update README.md, provide user manual and description
 
 ## [25.8.1] - 2025-08-06
+
+### Added
 - Add styled buttons and tooltip, add a plugin icon in the marketplace view, changed default statues, fixed README.md
